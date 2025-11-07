@@ -11,6 +11,7 @@ import 'package:receta_ya/features/meal_types/domain/usecases/get_meal_types_use
 import 'package:receta_ya/features/meal_types/presentation/cubit/meal_types_cubit.dart';
 import 'package:receta_ya/domain/model/recipe.dart';
 import 'package:receta_ya/features/profile/data/source/profile_data_source.dart';
+import 'package:receta_ya/rawscreens/recipe_detail_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -218,7 +219,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               title: Text(r.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                               subtitle: Text('${r.caloriesPerPortion != null ? r.caloriesPerPortion!.toInt() : 0} kcal${(r.types.isNotEmpty ? ' • ${r.types.join(', ')}' : (r.difficulty != null ? ' • ${r.difficulty}' : ''))}'),
                               trailing: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => RecipeDetailScreen(recipeId: r.id),
+                                    ),
+                                  );
+                                },
                                 child: const Text('Ver receta'),
                               ),
                             ),
