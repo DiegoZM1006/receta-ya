@@ -11,4 +11,9 @@ class RecipeRepositoryImpl implements RecipeRepository {
   Future<List<Recipe>> getRecipes({String? type, String? query}) async {
     return await remote.fetchRecipes(type: type, query: query);
   }
+
+  @override
+  Future<Recipe> getRecipeById(String recipeId) async {
+    return await remote.fetchRecipeById(recipeId);
+  }
 }
