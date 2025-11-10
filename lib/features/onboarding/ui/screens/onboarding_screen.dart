@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:receta_ya/features/profile/data/source/profile_data_source.dart';
+import 'package:receta_ya/features/profile/domain/usecases/update_onboarding_data_usecase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -17,7 +17,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int typicalServings = 1;
   String cookingTimePreference = '';
 
-  final ProfileDataSource _profileDataSource = ProfileDataSourceImpl();
+  final UpdateOnboardingDataUseCase _updateOnboardingDataUseCase =
+      UpdateOnboardingDataUseCase();
 
   void _next() {
     if (step < 3) {
@@ -36,7 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (user == null) return;
 
     try {
-      await _profileDataSource.updateOnboardingData(
+      await _updateOnboardingDataUseCase.execute(
         user.id,
         cookingSkill: cookingSkill,
         cookingGoals: cookingGoals,

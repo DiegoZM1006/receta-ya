@@ -9,8 +9,7 @@ import 'package:receta_ya/features/meal_types/data/source/meal_type_remote_datas
 import 'package:receta_ya/features/meal_types/data/repository/meal_type_repository_impl.dart';
 import 'package:receta_ya/features/meal_types/domain/usecases/get_meal_types_usecase.dart';
 import 'package:receta_ya/features/meal_types/presentation/cubit/meal_types_cubit.dart';
-import 'package:receta_ya/domain/model/recipe.dart';
-import 'package:receta_ya/features/profile/data/source/profile_data_source.dart';
+import 'package:receta_ya/features/profile/domain/usecases/get_profile_usecase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -55,7 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
-      final profile = await ProfileDataSourceImpl().getProfile(user.id);
+      final getProfileUseCase = GetProfileUseCase();
+      final profile = await getProfileUseCase.execute(user.id);
       if (profile != null && profile.name.isNotEmpty) {
         setState(() {
           _userName = profile.name;
