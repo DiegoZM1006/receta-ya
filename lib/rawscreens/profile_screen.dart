@@ -27,12 +27,12 @@ class ProfileScreenState extends State<ProfileScreen> {
     user = Supabase.instance.client.auth.currentUser;
     print("****");
     print(user);
-    
+
     if (user != null) {
       userProfile = await _profileDataSource.getProfile(user!.id);
       print("User profile: $userProfile");
     }
-    
+
     setState(() {
       isLoading = false;
     });
@@ -51,9 +51,7 @@ class ProfileScreenState extends State<ProfileScreen> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -73,7 +71,7 @@ class ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             children: [
               const SizedBox(height: 20),
-              
+
               // Profile avatar
               Container(
                 width: 120,
@@ -171,6 +169,31 @@ class ProfileScreenState extends State<ProfileScreen> {
 
               const Spacer(),
 
+              // Favorites button
+              Container(
+                width: double.infinity,
+                height: 50,
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pushNamed(context, '/favorites'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF386BF6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Favoritos',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+
               // Logout button
               Container(
                 width: double.infinity,
@@ -225,11 +248,7 @@ class ProfileScreenState extends State<ProfileScreen> {
           ),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: Colors.grey[600],
-                size: 20,
-              ),
+              Icon(icon, color: Colors.grey[600], size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
