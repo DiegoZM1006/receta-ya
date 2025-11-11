@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:receta_ya/domain/model/recipe.dart';
+import 'package:receta_ya/domain/model/ingredient.dart';
 
 class RecipeRemoteDataSource {
   final SupabaseClient client = Supabase.instance.client;
@@ -84,6 +85,88 @@ class RecipeRemoteDataSource {
     }
 
     return recipes;
+  }
+
+  Future<Recipe> fetchRecipeById(String recipeId) async {
+    // Obtener la receta principal
+    final recipeRes = await client
+        .from('recipes')
+        .select()
+        .eq('recipe_id', recipeId)
+        .single();
+
+    final recipeData = Map<String, dynamic>.from(recipeRes);
+    final recipe = Recipe.fromJson(recipeData);
+
+    // Obtener ingredientes de la receta con join a la tabla ingredients
+    final ingredientsRes = await client
+        .from('recipe_ingredients')
+        .select('''
+          base_quantity,
+          ingredients (
+            ingredient_id,
+            name,
+            unit,
+            calories_per_unit
+          )
+        ''')
+        .eq('recipe_id', recipeId);
+
+    final ingredientsList = List<dynamic>.from(ingredientsRes as List? ?? []);
+    final List<Ingredient> ingredients = [];
+
+    for (var item in ingredientsList) {
+      final ingredientData = item['ingredients'];
+      if (ingredientData != null) {
+        final ingredientMap = Map<String, dynamic>.from(ingredientData);
+        ingredientMap['base_quantity'] = item['base_quantity'];
+        ingredients.add(Ingredient.fromJson(ingredientMap));
+      }
+    }
+
+    // Obtener tipos de comida relacionados
+    final mealTypesRes = await client
+        .from('recipe_meal_types')
+        .select('meal_type_id')
+        .eq('recipe_id', recipeId);
+
+    final mealTypeIds = List<dynamic>.from(mealTypesRes as List? ?? [])
+        .map((e) => e['meal_type_id'].toString())
+        .toList();
+
+    final List<String> types = [];
+    if (mealTypeIds.isNotEmpty) {
+      final allMealTypes = await client
+          .from('meal_types')
+          .select('meal_type_id, name');
+
+      final allMealTypesList = List<dynamic>.from(allMealTypes as List? ?? []);
+      for (var mt in allMealTypesList) {
+        if (mealTypeIds.contains(mt['meal_type_id'].toString())) {
+          types.add(mt['name'].toString());
+        }
+      }
+    }
+
+    // Construir la receta completa con ingredientes y tipos
+    return Recipe(
+      id: recipe.id,
+      name: recipe.name,
+      description: recipe.description,
+      caloriesPerPortion: recipe.caloriesPerPortion,
+      proteinsPerPortion: recipe.proteinsPerPortion,
+      carbsPerPortion: recipe.carbsPerPortion,
+      fatsPerPortion: recipe.fatsPerPortion,
+      prepTimeMinutes: recipe.prepTimeMinutes,
+      difficulty: recipe.difficulty,
+      imageUrl: recipe.imageUrl,
+      instructions: recipe.instructions,
+      baseServings: recipe.baseServings,
+      createdAt: recipe.createdAt,
+      type: recipe.type,
+      types: types,
+      ingredients: ingredients,
+    );
   }
 
 }

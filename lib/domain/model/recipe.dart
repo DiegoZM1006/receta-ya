@@ -1,3 +1,5 @@
+import 'ingredient.dart';
+
 class Recipe {
   final String id;
   final String name;
@@ -13,7 +15,8 @@ class Recipe {
   final int? baseServings; 
   final DateTime? createdAt; 
   final String? type;
-  final List<String> types; 
+  final List<String> types;
+  final List<Ingredient> ingredients; 
 
   Recipe({
     required this.id,
@@ -31,6 +34,7 @@ class Recipe {
     this.createdAt,
     this.type,
     this.types = const [],
+    this.ingredients = const [],
   });
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
