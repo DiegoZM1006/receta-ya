@@ -9,8 +9,7 @@ import 'package:receta_ya/features/meal_types/data/source/meal_type_remote_datas
 import 'package:receta_ya/features/meal_types/data/repository/meal_type_repository_impl.dart';
 import 'package:receta_ya/features/meal_types/domain/usecases/get_meal_types_usecase.dart';
 import 'package:receta_ya/features/meal_types/presentation/cubit/meal_types_cubit.dart';
-import 'package:receta_ya/domain/model/recipe.dart';
-import 'package:receta_ya/features/profile/data/source/profile_data_source.dart';
+import 'package:receta_ya/features/profile/domain/usecases/get_profile_usecase.dart';
 import 'package:receta_ya/rawscreens/recipe_detail_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -56,7 +55,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
-      final profile = await ProfileDataSourceImpl().getProfile(user.id);
+      final getProfileUseCase = GetProfileUseCase();
+      final profile = await getProfileUseCase.execute(user.id);
       if (profile != null && profile.name.isNotEmpty) {
         setState(() {
           _userName = profile.name;
@@ -145,8 +145,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       // always include 'Todas' first
                       chips.add(
                         ChoiceChip(
-                          label: const Text('Todas'),
+                          label: Text('Todas',
+                            style: TextStyle(
+                              color: _selectedFilter == "Todas" ? Colors.white : Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           selected: _selectedFilter == 'Todas',
+                          showCheckmark: false,
                           onSelected: (_) => _onFilterSelected('Todas'),
                           selectedColor: const Color(0xFF386BF6),
                         ),
@@ -155,10 +161,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       for (var t in mState.mealTypes) {
                         chips.add(
                           ChoiceChip(
-                            label: Text(t.name),
+                            label: Text(
+                              t.name,
+                              style: TextStyle(
+                                color: _selectedFilter == t.name ? Colors.white : Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                             selected: _selectedFilter == t.name,
                             onSelected: (_) => _onFilterSelected(t.name),
                             selectedColor: const Color(0xFF386BF6),
+                            backgroundColor: Colors.white,
+                            showCheckmark: false,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: Color(0xFF386BF6)),
+                            ),
                           ),
                         );
                       }
@@ -188,38 +206,136 @@ class _HomeScreenState extends State<HomeScreen> {
                         return const Center(child: Text('No se encontraron recetas'));
                       }
 
-                      return ListView.builder(
-                        itemCount: state.recipes.length,
-                        itemBuilder: (context, index) {
-                          final Recipe r = state.recipes[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: ListTile(
-                              leading: SizedBox(
-                                width: 56,
-                                height: 56,
-                                child: r.imageUrl != null
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          r.imageUrl!,
-                                          width: 56,
-                                          height: 56,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => Container(
-                                            width: 56,
-                                            height: 56,
-                                            color: Colors.grey[200],
-                                            child: const Icon(Icons.image_not_supported, size: 20, color: Colors.grey),
+                      return SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              for (final r in state.recipes)
+                                SizedBox(
+                                  width: (MediaQuery.of(context).size.width - 44) / 2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFFF7F8FD), Color(0xFFE9ECF8)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          r.name,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                      )
-                                    : Container(width: 56, height: 56, color: Colors.grey[200]),
-                              ),
-                              title: Text(r.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                              subtitle: Text('${r.caloriesPerPortion != null ? r.caloriesPerPortion!.toInt() : 0} kcal${(r.types.isNotEmpty ? ' • ${r.types.join(', ')}' : (r.difficulty != null ? ' • ${r.difficulty}' : ''))}'),
-                              trailing: ElevatedButton(
-                                onPressed: () {
+                                        const SizedBox(height: 8),
+                                        Stack(
+                                          alignment: Alignment.bottomLeft,
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(12),
+                                              child: AspectRatio(
+                                                aspectRatio: 1,
+                                                child: r.imageUrl != null
+                                                    ? Image.network(
+                                                  r.imageUrl!,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) => Container(
+                                                    color: Colors.grey[200],
+                                                    child: const Icon(Icons.image_not_supported,
+                                                        color: Colors.grey),
+                                                  ),
+                                                )
+                                                    : Container(
+                                                  color: Colors.grey[200],
+                                                  child: const Icon(Icons.image,
+                                                      color: Colors.grey),
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              left: 8,
+                                              bottom: 8,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withOpacity(0.9),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.local_fire_department,
+                                                        color: Colors.orange, size: 16),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      '${r.caloriesPerPortion?.toInt() ?? 0} kcal',
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ElevatedButton(
+
+                                                onPressed: () {},
+                                                style: ElevatedButton.styleFrom(
+                                                  elevation: 0,
+                                                  padding: const EdgeInsets.symmetric(vertical: 0),
+                                                  backgroundColor: const Color(0xFF386BF6),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  'Ver receta',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.white,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.05),
+                                                    blurRadius: 4,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: IconButton(
+                                                icon: const Icon(Icons.add, color: Colors.black87),
+                                                onPressed: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -227,12 +343,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   );
                                 },
-                                child: const Text('Ver receta'),
-                              ),
-                            ),
-                          );
-                        },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       );
+
                     },
                   ),
                 )

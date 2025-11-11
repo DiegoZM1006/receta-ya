@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:receta_ya/features/profile/data/source/profile_data_source.dart';
+import 'package:receta_ya/features/profile/domain/usecases/get_profile_usecase.dart';
 import 'package:receta_ya/domain/model/profile.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class ProfileScreen extends StatefulWidget {
 class ProfileScreenState extends State<ProfileScreen> {
   User? user;
   Profile? userProfile;
-  final ProfileDataSource _profileDataSource = ProfileDataSourceImpl();
+  final GetProfileUseCase _getProfileUseCase = GetProfileUseCase();
   bool isLoading = true;
 
   @override
@@ -29,7 +29,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     print(user);
     
     if (user != null) {
-      userProfile = await _profileDataSource.getProfile(user!.id);
+      userProfile = await _getProfileUseCase.execute(user!.id);
       print("User profile: $userProfile");
     }
     
