@@ -7,6 +7,7 @@ import 'package:receta_ya/rawscreens/profile_screen.dart';
 import 'package:receta_ya/features/auth/ui/screens/signup_screen.dart';
 import 'package:receta_ya/rawscreens/main_screen.dart';
 import 'package:receta_ya/features/onboarding/ui/screens/onboarding_screen.dart';
+import 'package:receta_ya/rawscreens/favorites_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -43,6 +44,7 @@ class MyApp extends StatelessWidget {
         '/login': (_) => LoginScreen(),
         '/profile': (_) => ProfileScreen(),
         '/onboarding': (_) => OnboardingScreen(),
+        '/favorites': (_) => FavoritesScreen(),
         '/main': (_) => MainScreen(),
       },
     );

@@ -7,6 +7,11 @@ import 'package:receta_ya/features/recipes/data/repository/recipe_repository_imp
 import 'package:receta_ya/features/recipes/domain/usecases/get_recipe_by_id_usecase.dart';
 import 'package:receta_ya/features/recipes/presentation/cubit/recipe_detail_cubit.dart';
 import 'dart:math' as math;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:receta_ya/features/favorites/data/repository/favorites_repository_impl.dart';
+import 'package:receta_ya/features/favorites/domain/usecases/add_favorite_usecase.dart';
+import 'package:receta_ya/features/favorites/domain/usecases/remove_favorite_usecase.dart';
+import 'package:receta_ya/features/favorites/domain/usecases/is_favorite_usecase.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final String recipeId;
@@ -19,6 +24,20 @@ class RecipeDetailScreen extends StatefulWidget {
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   int _selectedTab = 0; // 0 = Ingredientes, 1 = Calorias
+  bool _isFavorite = false;
+  bool _favoriteLoaded = false;
+  final _favoritesRepo = FavoritesRepositoryImpl();
+  late final AddFavoriteUseCase _addFavorite;
+  late final RemoveFavoriteUseCase _removeFavorite;
+  late final IsFavoriteUseCase _isFavoriteUseCase;
+
+  @override
+  void initState() {
+    super.initState();
+    _addFavorite = AddFavoriteUseCase(_favoritesRepo);
+    _removeFavorite = RemoveFavoriteUseCase(_favoritesRepo);
+    _isFavoriteUseCase = IsFavoriteUseCase(_favoritesRepo);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +130,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   ),
                   child: const Center(child: Text('Receta no encontrada')),
                 );
+              }
+
+              // Ensure favorite status is loaded once after recipe is available
+              if (!_favoriteLoaded && state.recipe != null) {
+                _favoriteLoaded = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _loadFavoriteStatus(state.recipe!.id);
+                });
               }
 
               return _buildRecipeContent(state.recipe!);
@@ -235,11 +262,45 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.favorite_border, color: Colors.black),
+            child: IconButton(
+              icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : Colors.black),
+              onPressed: () async {
+                final user = Supabase.instance.client.auth.currentUser;
+                if (user == null) {
+                  // not signed in
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes iniciar sesión para guardar favoritos')));
+                  return;
+                }
+                final recipeId = recipe.id;
+                try {
+                  if (_isFavorite) {
+                    await _removeFavorite.execute(userId: user.id, recipeId: recipeId);
+                    setState(() => _isFavorite = false);
+                  } else {
+                    await _addFavorite.execute(userId: user.id, recipeId: recipeId);
+                    setState(() => _isFavorite = true);
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al actualizar favoritos')));
+                }
+              },
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _loadFavoriteStatus(String recipeId) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final fav = await _isFavoriteUseCase.execute(userId: user.id, recipeId: recipeId);
+      if (!mounted) return;
+      setState(() => _isFavorite = fav);
+    } catch (e) {
+      // ignore
+    }
   }
 
   Widget _buildRecipeImage(Recipe recipe) {
