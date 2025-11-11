@@ -302,7 +302,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                             Expanded(
                                               child: ElevatedButton(
 
-                                                onPressed: () {},
+                                                onPressed: () {
+                                                 
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => RecipeDetailScreen(recipeId: r.id),
+                                                    ),
+                                                  );
+                                               
+                                                },
+
+                                                
                                                 style: ElevatedButton.styleFrom(
                                                   elevation: 0,
                                                   padding: const EdgeInsets.symmetric(vertical: 0),
@@ -335,14 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                               child: IconButton(
                                                 icon: const Icon(Icons.add, color: Colors.black87),
-                                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => RecipeDetailScreen(recipeId: r.id),
-                                    ),
-                                  );
-                                },
+                                                onPressed: () {},
                                               ),
                                             ),
                                           ],
