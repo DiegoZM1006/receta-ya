@@ -13,6 +13,7 @@ class LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -227,7 +228,7 @@ class LoginScreenState extends State<LoginScreen> {
                       ),
                       child: TextField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         style: GoogleFonts.poppins(fontSize: 16),
                         decoration: InputDecoration(
                           hintText: 'Ingresa tu contraseña',
@@ -243,11 +244,19 @@ class LoginScreenState extends State<LoginScreen> {
                             horizontal: 16,
                             vertical: 16,
                           ),
-                          suffixIcon: const Icon(
-                            Icons.visibility_off_outlined,
-                            color: Colors.grey,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
                         ),
+                        onSubmitted: (_) => _login(emailController.text, passwordController.text),
                       ),
                     ),
                   ],
