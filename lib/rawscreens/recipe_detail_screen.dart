@@ -30,6 +30,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final AddFavoriteUseCase _addFavorite;
   late final RemoveFavoriteUseCase _removeFavorite;
   late final IsFavoriteUseCase _isFavoriteUseCase;
+  int _desiredServings = 1;
 
   @override
   void initState() {
@@ -137,6 +138,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 _favoriteLoaded = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _loadFavoriteStatus(state.recipe!.id);
+                  // initialize desired servings from recipe base
+                  if (state.recipe!.baseServings != null && state.recipe!.baseServings! > 0) {
+                    setState(() => _desiredServings = state.recipe!.baseServings!);
+                  }
                 });
               }
 
@@ -433,15 +438,32 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           if (recipe.description != null && recipe.description!.isNotEmpty)
             const SizedBox(height: 20),
-          Text(
-            'Ingredientes',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ingredientes',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Porciones base: ${recipe.baseServings ?? 1}',
+                      style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ),
+                  _buildServingsSelector(),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          ...recipe.ingredients.map((ingredient) => _buildIngredientItem(ingredient)),
+          ...recipe.ingredients.map((ingredient) => _buildIngredientItem(ingredient, recipe)),
         ],
       ),
     );
@@ -468,14 +490,24 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildIngredientItem(ingredient) {
+  Widget _buildIngredientItem(ingredient, Recipe recipe) {
+    // Calculate adjusted quantity based on desired servings
+    final baseServings = (recipe.baseServings != null && recipe.baseServings! > 0) ? recipe.baseServings! : 1;
+    final factor = _desiredServings / baseServings;
+    final adjusted = (ingredient.quantity * factor);
+    // Prepare display strings
+    final baseQtyStr = '${_formatQuantity(ingredient.quantity)} ${ingredient.unit}';
+    final adjustedQtyStr = '${_formatQuantity(adjusted)} ${ingredient.unit}';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 8,
             height: 8,
+            margin: const EdgeInsets.only(top: 6),
             decoration: const BoxDecoration(
               color: Colors.black,
               shape: BoxShape.rectangle,
@@ -483,14 +515,129 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              '${ingredient.quantity.toStringAsFixed(0)}${ingredient.unit} ${ingredient.name}',
-              style: GoogleFonts.poppins(fontSize: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ingredient.name,
+                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    // Base quantity (muted)
+                    Text(
+                      baseQtyStr,
+                      style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(width: 8),
+                    // Arrow separator
+                    Text('→', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500])),
+                    const SizedBox(width: 8),
+                    // Adjusted quantity with subtle animation
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) {
+                        final fade = animation.drive(CurveTween(curve: Curves.easeInOut));
+                        final offset = animation.drive(Tween<Offset>(begin: const Offset(0, -0.05), end: Offset.zero).chain(CurveTween(curve: Curves.easeOut)));
+                        return FadeTransition(opacity: fade, child: SlideTransition(position: offset, child: child));
+                      },
+                      child: Text(
+                        adjustedQtyStr,
+                        key: ValueKey<String>('qty_${ingredient.id}_$_desiredServings'),
+                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF386BF6)),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Optional small badge showing current servings (subtle)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'x$_desiredServings',
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[800], fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildServingsSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () {
+              if (_desiredServings > 1) setState(() => _desiredServings--);
+            },
+            child: Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              child: AnimatedScale(
+                scale: 1.0,
+                duration: const Duration(milliseconds: 120),
+                child: const Icon(Icons.remove, size: 18),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Animated number for servings (subtle fade + slide)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              final fade = animation.drive(CurveTween(curve: Curves.easeInOut));
+              final offset = animation.drive(Tween<Offset>(begin: const Offset(0, -0.05), end: Offset.zero).chain(CurveTween(curve: Curves.easeOut)));
+              return FadeTransition(opacity: fade, child: SlideTransition(position: offset, child: child));
+            },
+            child: Text(
+              '$_desiredServings',
+              key: ValueKey<int>(_desiredServings),
+              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => setState(() => _desiredServings++),
+            child: Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              child: AnimatedScale(
+                scale: 1.0,
+                duration: const Duration(milliseconds: 120),
+                child: const Icon(Icons.add, size: 18),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatQuantity(double q) {
+    if (q <= 0) return q.toStringAsFixed(0);
+    // If close to integer, show no decimals
+    if ((q - q.round()).abs() < 0.01) return q.round().toString();
+    // For small quantities show 2 decimals, otherwise 1
+    if (q < 1) return q.toStringAsFixed(2);
+    if (q < 10) return q.toStringAsFixed(1);
+    return q.toStringAsFixed(0);
   }
 
   Widget _buildCaloriesTab(Recipe recipe) {
