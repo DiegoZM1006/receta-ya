@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:receta_ya/rawscreens/profile_screen.dart';
 import 'package:receta_ya/rawscreens/home_screen.dart';
 import 'package:receta_ya/rawscreens/chat_screen.dart';
+import 'package:receta_ya/rawscreens/favorites_screen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -10,11 +11,12 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 2; // Start with profile screen (index 2)
+  int _currentIndex = 3; // Start with profile screen (index 3)
 
   final List<Widget> _screens = [
     HomeScreen(),
     ChatScreen(),
+    FavoritesScreen(),
     ProfileScreen(),
   ];
 
@@ -72,6 +74,10 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_outline),
               label: 'Chat',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite_border),
+              label: 'Favoritos',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),
