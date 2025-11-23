@@ -12,6 +12,8 @@ class LoginScreen extends StatefulWidget {
 class LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -21,19 +23,75 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login(String email, String pass) async {
+    final trimmedEmail = email.trim();
+    final trimmedPass = pass;
+
+    // Basic validations
+    if (trimmedEmail.isEmpty) {
+      _showError('Por favor ingresa tu correo electrónico.');
+      return;
+    }
+
+    if (!trimmedEmail.contains('@')) {
+      _showError('Correo inválido: debe contener el carácter "@".');
+      return;
+    }
+
+    if (trimmedPass.isEmpty) {
+      _showError('Por favor ingresa tu contraseña.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       await Supabase.instance.client.auth.signInWithPassword(
-        email: email,
-        password: pass,
+        email: trimmedEmail,
+        password: trimmedPass,
       );
-      print("****");
-      print(Supabase.instance.client.auth.currentUser);
-      Navigator.pushReplacementNamed(context, '/main');
+
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        Navigator.pushReplacementNamed(context, '/main');
+      } else {
+        _showError('No se pudo iniciar sesión. Por favor verifica tus credenciales.');
+      }
     } on AuthException catch (e) {
-      print(e);
+      final msg = e.message.toLowerCase();
+      if (msg.contains('invalid') || msg.contains('invalid login') || msg.contains('invalid credentials') || msg.contains('invalid password')) {
+        _showError('Correo o contraseña incorrectos. Por favor verifica e inténtalo de nuevo.');
+      } else if (msg.contains('user') && msg.contains('not found')) {
+        _showError('No existe una cuenta con ese correo. Regístrate primero.');
+      } else if (msg.contains('email')) {
+        _showError('Correo inválido. Verifica el formato.');
+      } else {
+        _showError('Error de autenticación: ${e.message}');
+      }
     } catch (e) {
-      print(e);
+      final text = e.toString().toLowerCase();
+      if (text.contains('network') || text.contains('socket')) {
+        _showError('Error de red. Revisa tu conexión e inténtalo de nuevo.');
+      } else {
+        _showError('Ocurrió un error inesperado. Intenta nuevamente más tarde.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
   @override
@@ -170,7 +228,7 @@ class LoginScreenState extends State<LoginScreen> {
                       ),
                       child: TextField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         style: GoogleFonts.poppins(fontSize: 16),
                         decoration: InputDecoration(
                           hintText: 'Ingresa tu contraseña',
@@ -186,11 +244,19 @@ class LoginScreenState extends State<LoginScreen> {
                             horizontal: 16,
                             vertical: 16,
                           ),
-                          suffixIcon: const Icon(
-                            Icons.visibility_off_outlined,
-                            color: Colors.grey,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
                         ),
+                        onSubmitted: (_) => _login(emailController.text, passwordController.text),
                       ),
                     ),
                   ],
@@ -219,8 +285,9 @@ class LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () =>
-                        _login(emailController.text, passwordController.text),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _login(emailController.text, passwordController.text),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF386BF6),
                       shape: RoundedRectangleBorder(
@@ -228,14 +295,23 @@ class LoginScreenState extends State<LoginScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      'Iniciar sesión',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Iniciar sesión',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
 

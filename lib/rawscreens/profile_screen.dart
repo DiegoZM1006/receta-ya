@@ -60,10 +60,12 @@ class ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: SafeArea(
         child: Padding(
@@ -169,30 +171,6 @@ class ProfileScreenState extends State<ProfileScreen> {
 
               const Spacer(),
 
-              // Favorites button
-              Container(
-                width: double.infinity,
-                height: 50,
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/favorites'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF386BF6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Favoritos',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
 
               // Logout button
               Container(

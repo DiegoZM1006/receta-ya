@@ -12,6 +12,9 @@ import 'package:receta_ya/features/meal_types/presentation/cubit/meal_types_cubi
 import 'package:receta_ya/features/profile/domain/usecases/get_profile_usecase.dart';
 import 'package:receta_ya/rawscreens/recipe_detail_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:receta_ya/features/favorites/data/repository/favorites_repository_impl.dart';
+import 'package:receta_ya/features/favorites/domain/usecases/add_favorite_usecase.dart';
+import 'package:receta_ya/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -24,6 +27,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _userName = 'Usuario';
   late final RecipesCubit _recipesCubit;
   late final MealTypesCubit _mealTypesCubit;
+  final _favoritesRepo = FavoritesRepositoryImpl();
+  late final AddFavoriteUseCase _addFavorite;
+  late final RemoveFavoriteUseCase _removeFavorite;
+  final Set<String> _favoriteIds = {};
+  bool _favoritesLoaded = false;
 
   @override
   void initState() {
@@ -41,6 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     _recipesCubit.loadRecipes();
     _mealTypesCubit.loadMealTypes();
+    _addFavorite = AddFavoriteUseCase(_favoritesRepo);
+    _removeFavorite = RemoveFavoriteUseCase(_favoritesRepo);
+    _loadFavoritesIfNeeded();
   }
 
   @override
@@ -49,6 +60,21 @@ class _HomeScreenState extends State<HomeScreen> {
     _recipesCubit.close();
     _mealTypesCubit.close();
     super.dispose();
+  }
+
+  Future<void> _loadFavoritesIfNeeded() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    if (_favoritesLoaded) return;
+    try {
+      final list = await _favoritesRepo.getFavoritesByUser(userId: user.id);
+      if (!mounted) return;
+      setState(() {
+        _favoriteIds.addAll(list);
+        _favoritesLoaded = true;
+      });
+    } catch (_) {
+    }
   }
 
   Future<void> _loadUserName() async {
@@ -220,16 +246,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(16),
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFFF7F8FD), Color(0xFFE9ECF8)],
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.white.withOpacity(0.60),
+                                          Colors.white.withOpacity(0.45),
+                                        ],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
+                                      border: Border.all(color: Colors.white.withOpacity(0.35)),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 8,
-                                          offset: Offset(0, 2),
+                                          color: Colors.black.withOpacity(0.09),
+                                          blurRadius: 12,
+                                          offset: Offset(0, 4),
                                         ),
                                       ],
                                     ),
@@ -345,8 +375,36 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 ],
                                               ),
                                               child: IconButton(
-                                                icon: const Icon(Icons.add, color: Colors.black87),
-                                                onPressed: () {},
+                                                icon: Text(
+                                                  _favoriteIds.contains(r.id) ? '❤️' : '🤍',
+                                                  style: const TextStyle(fontSize: 18),
+                                                ),
+                                                onPressed: () async {
+                                                  final user = Supabase.instance.client.auth.currentUser;
+                                                  if (user == null) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes iniciar sesión para guardar favoritos')));
+                                                    return;
+                                                  }
+                                                  try {
+                                                    if (_favoriteIds.contains(r.id)) {
+                                                      await _removeFavorite.execute(userId: user.id, recipeId: r.id);
+                                                      if (!mounted) return;
+                                                      setState(() {
+                                                        _favoriteIds.remove(r.id);
+                                                      });
+                                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receta removida de favoritos')));
+                                                    } else {
+                                                      await _addFavorite.execute(userId: user.id, recipeId: r.id);
+                                                      if (!mounted) return;
+                                                      setState(() {
+                                                        _favoriteIds.add(r.id);
+                                                      });
+                                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receta agregada a favoritos')));
+                                                    }
+                                                  } catch (e) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al actualizar favoritos')));
+                                                  }
+                                                },
                                               ),
                                             ),
                                           ],
