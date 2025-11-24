@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   String _selectedFilter = 'Todas';
   String _userName = 'Usuario';
   late final RecipesCubit _recipesCubit;
@@ -117,8 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Hola', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey[600])),                      
                         Text(_userName, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                        Text('Buenos días', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
+                        Text('¡Bienvenido de nuevo!', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey[600])),
                       ],
                     ),
                   ],
@@ -138,6 +140,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           filled: true,
                           fillColor: Colors.white,
                         ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value.trim();
+                          });
+                        },
                         onSubmitted: (value) => _onSearch(),
                       ),
                     ),
@@ -232,6 +239,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         return const Center(child: Text('No se encontraron recetas'));
                       }
 
+                      // Apply client-side incremental filtering using a normalized compare
+                      List filtered = state.recipes;
+                      if (_searchQuery.isNotEmpty) {
+                        final nq = _normalize(_searchQuery);
+                        filtered = state.recipes.where((r) {
+                          final name = _normalize(r.name ?? '');
+                          return name.startsWith(nq);
+                        }).toList();
+                      }
+
                       return SingleChildScrollView(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 8),
@@ -239,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             spacing: 12,
                             runSpacing: 12,
                             children: [
-                              for (final r in state.recipes)
+                              for (final r in filtered)
                                 SizedBox(
                                   width: (MediaQuery.of(context).size.width - 44) / 2,
                                   child: Container(
@@ -440,6 +457,24 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     // reload
     _recipesCubit.loadRecipes(type: filter == 'Todas' ? null : filter, query: _searchController.text.trim().isEmpty ? null : _searchController.text.trim());
+  }
+
+  // Normalize a string for comparison: remove diacritics and lowercase.
+  String _normalize(String input) {
+    var s = input.toLowerCase();
+    const accents = {
+      'á': 'a', 'à': 'a', 'ä': 'a', 'â': 'a', 'ã': 'a', 'å': 'a',
+      'é': 'e', 'è': 'e', 'ë': 'e', 'ê': 'e',
+      'í': 'i', 'ì': 'i', 'ï': 'i', 'î': 'i',
+      'ó': 'o', 'ò': 'o', 'ö': 'o', 'ô': 'o', 'õ': 'o',
+      'ú': 'u', 'ù': 'u', 'ü': 'u', 'û': 'u',
+      'ñ': 'n', 'ç': 'c'
+    };
+    accents.forEach((k, v) {
+      s = s.replaceAll(k, v);
+    });
+    // (no further normalization required)
+    return s;
   }
 }
 

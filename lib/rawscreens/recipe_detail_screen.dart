@@ -12,6 +12,7 @@ import 'package:receta_ya/features/favorites/data/repository/favorites_repositor
 import 'package:receta_ya/features/favorites/domain/usecases/add_favorite_usecase.dart';
 import 'package:receta_ya/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:receta_ya/features/favorites/domain/usecases/is_favorite_usecase.dart';
+import 'package:receta_ya/features/favorites/domain/usecases/get_favorites_count_usecase.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final String recipeId;
@@ -30,6 +31,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final AddFavoriteUseCase _addFavorite;
   late final RemoveFavoriteUseCase _removeFavorite;
   late final IsFavoriteUseCase _isFavoriteUseCase;
+  late final GetFavoritesCountUseCase _getFavoritesCount;
+  int _favoritesCount = 0;
   int _desiredServings = 1;
 
   @override
@@ -38,6 +41,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     _addFavorite = AddFavoriteUseCase(_favoritesRepo);
     _removeFavorite = RemoveFavoriteUseCase(_favoritesRepo);
     _isFavoriteUseCase = IsFavoriteUseCase(_favoritesRepo);
+    _getFavoritesCount = GetFavoritesCountUseCase(_favoritesRepo);
   }
 
   @override
@@ -138,10 +142,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 _favoriteLoaded = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _loadFavoriteStatus(state.recipe!.id);
-                  // initialize desired servings from recipe base
-                  if (state.recipe!.baseServings != null && state.recipe!.baseServings! > 0) {
-                    setState(() => _desiredServings = state.recipe!.baseServings!);
-                  }
+                    if (state.recipe!.baseServings != null && state.recipe!.baseServings! > 0) {
+                      setState(() => _desiredServings = state.recipe!.baseServings!);
+                    }
+                    _loadFavoritesCount(state.recipe!.id);
                 });
               }
 
@@ -280,10 +284,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 try {
                   if (_isFavorite) {
                     await _removeFavorite.execute(userId: user.id, recipeId: recipeId);
-                    setState(() => _isFavorite = false);
+                    setState(() {
+                      _isFavorite = false;
+                      if (_favoritesCount > 0) _favoritesCount--;
+                    });
                   } else {
                     await _addFavorite.execute(userId: user.id, recipeId: recipeId);
-                    setState(() => _isFavorite = true);
+                    setState(() {
+                      _isFavorite = true;
+                      _favoritesCount++;
+                    });
                   }
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al actualizar favoritos')));
@@ -303,6 +313,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       final fav = await _isFavoriteUseCase.execute(userId: user.id, recipeId: recipeId);
       if (!mounted) return;
       setState(() => _isFavorite = fav);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  Future<void> _loadFavoritesCount(String recipeId) async {
+    try {
+      final count = await _getFavoritesCount.call(recipeId);
+      if (!mounted) return;
+      setState(() => _favoritesCount = count);
     } catch (e) {
       // ignore
     }
@@ -423,7 +443,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             children: [
               _buildInfoItem(Icons.access_time, 'Tiempo', '${recipe.prepTimeMinutes ?? 0}min'),
               _buildInfoItem(Icons.star_border, 'Dificultad', recipe.difficulty ?? 'N/A'),
-              _buildInfoItem(Icons.favorite_border, 'Favoritos', '0'),
+              _buildInfoItem(Icons.favorite_border, 'Favoritos', '$_favoritesCount'),
             ],
           ),
           const SizedBox(height: 20),
