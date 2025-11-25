@@ -6,12 +6,15 @@ import 'package:receta_ya/features/home/ui/chat_screen.dart';
 import 'package:receta_ya/features/favorites/ui/favorites_screen.dart';
 
 class MainScreen extends StatefulWidget {
+  final int initialIndex;
+  const MainScreen({super.key, this.initialIndex = 0});
+
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0; // Start with profile screen (index 3)
+  late int _currentIndex;
 
   final List<Widget> _screens = [
     HomeScreen(),
@@ -19,6 +22,12 @@ class _MainScreenState extends State<MainScreen> {
     FavoritesScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
