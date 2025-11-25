@@ -9,9 +9,13 @@ import 'package:receta_ya/features/home/ui/main_screen.dart';
 import 'package:receta_ya/features/onboarding/ui/screens/onboarding_screen.dart';
 import 'package:receta_ya/features/favorites/ui/favorites_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Cargar variables de entorno
+  await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
     url: 'https://mqtmccaetlajrrhetlvi.supabase.co',
