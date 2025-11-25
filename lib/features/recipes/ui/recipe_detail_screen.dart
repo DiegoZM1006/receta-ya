@@ -13,6 +13,7 @@ import 'package:receta_ya/features/favorites/domain/usecases/add_favorite_usecas
 import 'package:receta_ya/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:receta_ya/features/favorites/domain/usecases/is_favorite_usecase.dart';
 import 'package:receta_ya/features/favorites/domain/usecases/get_favorites_count_usecase.dart';
+import 'package:receta_ya/features/home/ui/main_screen.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final String recipeId;
@@ -156,12 +157,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ],
           ),
           child: BottomNavigationBar(
-            currentIndex: 0, // Home está seleccionado ya que venimos de ahí
+            currentIndex: 0,
             onTap: (index) {
-              // Volver a MainScreen
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              }
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => MainScreen(initialIndex: index)),
+                (route) => false,
+              );
             },
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.white,
@@ -176,14 +177,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               fontWeight: FontWeight.w400,
             ),
             items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
               BottomNavigationBarItem(
                 icon: Icon(Icons.chat_bubble_outline),
                 label: 'Chat',
               ),
               BottomNavigationBarItem(
+                icon: Icon(Icons.favorite_border),
+                label: 'Favoritos',
+              ),
+              BottomNavigationBarItem(
                 icon: Icon(Icons.person),
-                label: 'Profile',
+                label: 'Perfil',
               ),
             ],
           ),
