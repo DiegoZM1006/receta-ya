@@ -3,7 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class AuthDataSource {
   Future<String?> signUp(String email, String password);
-  //Deveulva el userId, que será necesario para crear el registro el Profile
+  Future<void> signIn(String email, String password);
+  Future<String?> getCurrentUserId();
 }
 
 class AuthDataSourceImpl extends AuthDataSource {
@@ -14,5 +15,18 @@ class AuthDataSourceImpl extends AuthDataSource {
       password: password,
     );
     return response.user?.id;
+  }
+
+  @override
+  Future<void> signIn(String email, String password) async {
+    await Supabase.instance.client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  @override
+  Future<String?> getCurrentUserId() async {
+    return Supabase.instance.client.auth.currentUser?.id;
   }
 }

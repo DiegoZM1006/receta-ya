@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receta_ya/features/auth/ui/bloc/signup_bloc.dart';
-import 'package:receta_ya/rawscreens/login_screen.dart';
-import 'package:receta_ya/rawscreens/profile_screen.dart';
+import 'package:receta_ya/features/auth/ui/screens/login_screen.dart';
+import 'package:receta_ya/features/profile/ui/screens/profile_screen.dart';
 import 'package:receta_ya/features/auth/ui/screens/signup_screen.dart';
-import 'package:receta_ya/rawscreens/main_screen.dart';
+import 'package:receta_ya/features/home/ui/main_screen.dart';
 import 'package:receta_ya/features/onboarding/ui/screens/onboarding_screen.dart';
-import 'package:receta_ya/rawscreens/favorites_screen.dart';
+import 'package:receta_ya/features/favorites/ui/favorites_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {

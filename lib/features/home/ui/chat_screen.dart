@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:receta_ya/core/constants/app_colors.dart';
+import 'package:receta_ya/core/constants/app_text_styles.dart';
 
 class ChatScreen extends StatelessWidget {
   @override
@@ -9,11 +10,7 @@ class ChatScreen extends StatelessWidget {
       body: Center(
         child: Text(
           'Chat Screen',
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF386BF6),
-          ),
+          style: AppTextStyles.title.copyWith(color: AppColors.primary),
         ),
       ),
     );
