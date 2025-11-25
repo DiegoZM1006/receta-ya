@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:receta_ya/rawscreens/profile_screen.dart';
-import 'package:receta_ya/rawscreens/home_screen.dart';
-import 'package:receta_ya/rawscreens/chat_screen.dart';
-import 'package:receta_ya/rawscreens/favorites_screen.dart';
+import 'package:receta_ya/core/constants/app_colors.dart';
+import 'package:receta_ya/features/profile/ui/screens/profile_screen.dart';
+import 'package:receta_ya/features/home/ui/home_screen.dart';
+import 'package:receta_ya/features/home/ui/chat_screen.dart';
+import 'package:receta_ya/features/favorites/ui/favorites_screen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -24,16 +24,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE6F4FD),
-              Color(0xFFF4EDFD),
-            ],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.background),
         child: _screens[_currentIndex],
       ),
       bottomNavigationBar: Container(
@@ -55,22 +46,19 @@ class _MainScreenState extends State<MainScreen> {
             });
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF386BF6),
+          backgroundColor: AppColors.white,
+          selectedItemColor: AppColors.primary,
           unselectedItemColor: Colors.grey,
-          selectedLabelStyle: GoogleFonts.poppins(
+          selectedLabelStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
-          unselectedLabelStyle: GoogleFonts.poppins(
+          unselectedLabelStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w400,
           ),
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_outline),
               label: 'Chat',
@@ -79,10 +67,7 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.favorite_border),
               label: 'Favoritos',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Perfil',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
           ],
         ),
       ),

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_bloc.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_event.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_state.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:receta_ya/features/auth/domain/usecases/get_current_user_usecase.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -12,15 +12,20 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) {
-        final userId = Supabase.instance.client.auth.currentUser?.id;
         final bloc = ProfileBloc();
-        if (userId != null) {
-          bloc.add(LoadProfile(userId));
-        }
+        _loadProfile(bloc);
         return bloc;
       },
       child: const ProfileView(),
     );
+  }
+
+  Future<void> _loadProfile(ProfileBloc bloc) async {
+    final getCurrentUser = GetCurrentUserUseCase();
+    final userId = await getCurrentUser.execute();
+    if (userId != null) {
+      bloc.add(LoadProfile(userId));
+    }
   }
 }
 
@@ -30,15 +35,11 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Perfil'),
-      ),
+      appBar: AppBar(title: const Text('Perfil')),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           if (state is ProfileLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state is ProfileError) {
@@ -46,11 +47,7 @@ class ProfileView extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
                     state.message,
@@ -59,9 +56,9 @@ class ProfileView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () {
-                      final userId =
-                          Supabase.instance.client.auth.currentUser?.id;
+                    onPressed: () async {
+                      final getCurrentUser = GetCurrentUserUseCase();
+                      final userId = await getCurrentUser.execute();
                       if (userId != null) {
                         context.read<ProfileBloc>().add(LoadProfile(userId));
                       }
@@ -92,17 +89,14 @@ class ProfileView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _buildInfoCard(
-                    'Información Personal',
-                    [
-                      _buildInfoRow('Nombre', profile.name),
-                      _buildInfoRow('Email', profile.email),
-                      _buildInfoRow(
-                        'Miembro desde',
-                        _formatDate(profile.createdAt),
-                      ),
-                    ],
-                  ),
+                  _buildInfoCard('Información Personal', [
+                    _buildInfoRow('Nombre', profile.name),
+                    _buildInfoRow('Email', profile.email),
+                    _buildInfoRow(
+                      'Miembro desde',
+                      _formatDate(profile.createdAt),
+                    ),
+                  ]),
                   const SizedBox(height: 16),
                   // Puedes agregar más secciones aquí
                 ],
@@ -128,10 +122,7 @@ class ProfileView extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
             ...children,
@@ -157,12 +148,7 @@ class ProfileView extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 16))),
         ],
       ),
     );

@@ -7,7 +7,7 @@ import 'package:receta_ya/features/recipes/data/repository/recipe_repository_imp
 import 'package:receta_ya/features/recipes/domain/usecases/get_recipe_by_id_usecase.dart';
 import 'package:receta_ya/features/recipes/presentation/cubit/recipe_detail_cubit.dart';
 import 'dart:math' as math;
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:receta_ya/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:receta_ya/features/favorites/data/repository/favorites_repository_impl.dart';
 import 'package:receta_ya/features/favorites/domain/usecases/add_favorite_usecase.dart';
 import 'package:receta_ya/features/favorites/domain/usecases/remove_favorite_usecase.dart';
@@ -60,10 +60,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFFE6F4FD),
-                Color(0xFFF4EDFD),
-              ],
+              colors: [Color(0xFFE6F4FD), Color(0xFFF4EDFD)],
             ),
           ),
           child: BlocBuilder<RecipeDetailCubit, RecipeDetailState>(
@@ -76,10 +73,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFFE6F4FD),
-                        Color(0xFFF4EDFD),
-                      ],
+                      colors: [Color(0xFFE6F4FD), Color(0xFFF4EDFD)],
                     ),
                   ),
                   child: const Center(child: CircularProgressIndicator()),
@@ -94,10 +88,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFFE6F4FD),
-                        Color(0xFFF4EDFD),
-                      ],
+                      colors: [Color(0xFFE6F4FD), Color(0xFFF4EDFD)],
                     ),
                   ),
                   child: Center(
@@ -127,10 +118,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFFE6F4FD),
-                        Color(0xFFF4EDFD),
-                      ],
+                      colors: [Color(0xFFE6F4FD), Color(0xFFF4EDFD)],
                     ),
                   ),
                   child: const Center(child: Text('Receta no encontrada')),
@@ -142,10 +130,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 _favoriteLoaded = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _loadFavoriteStatus(state.recipe!.id);
-                    if (state.recipe!.baseServings != null && state.recipe!.baseServings! > 0) {
-                      setState(() => _desiredServings = state.recipe!.baseServings!);
-                    }
-                    _loadFavoritesCount(state.recipe!.id);
+                  if (state.recipe!.baseServings != null &&
+                      state.recipe!.baseServings! > 0) {
+                    setState(
+                      () => _desiredServings = state.recipe!.baseServings!,
+                    );
+                  }
+                  _loadFavoritesCount(state.recipe!.id);
                 });
               }
 
@@ -185,10 +176,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               fontWeight: FontWeight.w400,
             ),
             items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Home',
-              ),
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
               BottomNavigationBarItem(
                 icon: Icon(Icons.chat_bubble_outline),
                 label: 'Chat',
@@ -212,9 +200,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           final screenHeight = constraints.maxHeight;
           return SingleChildScrollView(
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: screenHeight,
-              ),
+              constraints: BoxConstraints(minHeight: screenHeight),
               child: Column(
                 children: [
                   _buildHeader(recipe),
@@ -224,7 +210,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   _buildTabs(),
                   const SizedBox(height: 16),
                   _buildTabContent(recipe),
-                  SizedBox(height: screenHeight * 0.1), // Espacio adicional para llenar
+                  SizedBox(
+                    height: screenHeight * 0.1,
+                  ), // Espacio adicional para llenar
                 ],
               ),
             ),
@@ -272,31 +260,50 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : Colors.black),
+              icon: Icon(
+                _isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: _isFavorite ? Colors.red : Colors.black,
+              ),
               onPressed: () async {
-                final user = Supabase.instance.client.auth.currentUser;
-                if (user == null) {
-                  // not signed in
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes iniciar sesión para guardar favoritos')));
+                final getCurrentUser = GetCurrentUserUseCase();
+                final userId = await getCurrentUser.execute();
+                if (userId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Debes iniciar sesión para guardar favoritos',
+                      ),
+                    ),
+                  );
                   return;
                 }
                 final recipeId = recipe.id;
                 try {
                   if (_isFavorite) {
-                    await _removeFavorite.execute(userId: user.id, recipeId: recipeId);
+                    await _removeFavorite.execute(
+                      userId: userId,
+                      recipeId: recipeId,
+                    );
                     setState(() {
                       _isFavorite = false;
                       if (_favoritesCount > 0) _favoritesCount--;
                     });
                   } else {
-                    await _addFavorite.execute(userId: user.id, recipeId: recipeId);
+                    await _addFavorite.execute(
+                      userId: userId,
+                      recipeId: recipeId,
+                    );
                     setState(() {
                       _isFavorite = true;
                       _favoritesCount++;
                     });
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al actualizar favoritos')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error al actualizar favoritos'),
+                    ),
+                  );
                 }
               },
             ),
@@ -307,15 +314,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Future<void> _loadFavoriteStatus(String recipeId) async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
+    final getCurrentUser = GetCurrentUserUseCase();
+    final userId = await getCurrentUser.execute();
+    if (userId == null) return;
     try {
-      final fav = await _isFavoriteUseCase.execute(userId: user.id, recipeId: recipeId);
+      final fav = await _isFavoriteUseCase.execute(
+        userId: userId,
+        recipeId: recipeId,
+      );
       if (!mounted) return;
       setState(() => _isFavorite = fav);
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadFavoritesCount(String recipeId) async {
@@ -371,17 +380,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _buildTabButton('Ingredientes', 0),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: Colors.grey[300],
-          ),
-          Expanded(
-            child: _buildTabButton('Calorias', 1),
-          ),
+          Expanded(child: _buildTabButton('Ingredientes', 0)),
+          Container(width: 1, height: 40, color: Colors.grey[300]),
+          Expanded(child: _buildTabButton('Calorias', 1)),
         ],
       ),
     );
@@ -441,9 +442,21 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildInfoItem(Icons.access_time, 'Tiempo', '${recipe.prepTimeMinutes ?? 0}min'),
-              _buildInfoItem(Icons.star_border, 'Dificultad', recipe.difficulty ?? 'N/A'),
-              _buildInfoItem(Icons.favorite_border, 'Favoritos', '$_favoritesCount'),
+              _buildInfoItem(
+                Icons.access_time,
+                'Tiempo',
+                '${recipe.prepTimeMinutes ?? 0}min',
+              ),
+              _buildInfoItem(
+                Icons.star_border,
+                'Dificultad',
+                recipe.difficulty ?? 'N/A',
+              ),
+              _buildInfoItem(
+                Icons.favorite_border,
+                'Favoritos',
+                '$_favoritesCount',
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -474,7 +487,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   Expanded(
                     child: Text(
                       'Porciones base: ${recipe.baseServings ?? 1}',
-                      style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ),
                   _buildServingsSelector(),
@@ -483,7 +499,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          ...recipe.ingredients.map((ingredient) => _buildIngredientItem(ingredient, recipe)),
+          ...recipe.ingredients.map(
+            (ingredient) => _buildIngredientItem(ingredient, recipe),
+          ),
         ],
       ),
     );
@@ -501,10 +519,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         const SizedBox(height: 2),
         Text(
           value,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -512,11 +527,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _buildIngredientItem(ingredient, Recipe recipe) {
     // Calculate adjusted quantity based on desired servings
-    final baseServings = (recipe.baseServings != null && recipe.baseServings! > 0) ? recipe.baseServings! : 1;
+    final baseServings =
+        (recipe.baseServings != null && recipe.baseServings! > 0)
+        ? recipe.baseServings!
+        : 1;
     final factor = _desiredServings / baseServings;
     final adjusted = (ingredient.quantity * factor);
     // Prepare display strings
-    final baseQtyStr = '${_formatQuantity(ingredient.quantity)} ${ingredient.unit}';
+    final baseQtyStr =
+        '${_formatQuantity(ingredient.quantity)} ${ingredient.unit}';
     final adjustedQtyStr = '${_formatQuantity(adjusted)} ${ingredient.unit}';
 
     return Padding(
@@ -540,7 +559,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               children: [
                 Text(
                   ingredient.name,
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -548,37 +570,72 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     // Base quantity (muted)
                     Text(
                       baseQtyStr,
-                      style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
                     ),
                     const SizedBox(width: 8),
                     // Arrow separator
-                    Text('→', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500])),
+                    Text(
+                      '→',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[500],
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     // Adjusted quantity with subtle animation
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
                       transitionBuilder: (child, animation) {
-                        final fade = animation.drive(CurveTween(curve: Curves.easeInOut));
-                        final offset = animation.drive(Tween<Offset>(begin: const Offset(0, -0.05), end: Offset.zero).chain(CurveTween(curve: Curves.easeOut)));
-                        return FadeTransition(opacity: fade, child: SlideTransition(position: offset, child: child));
+                        final fade = animation.drive(
+                          CurveTween(curve: Curves.easeInOut),
+                        );
+                        final offset = animation.drive(
+                          Tween<Offset>(
+                            begin: const Offset(0, -0.05),
+                            end: Offset.zero,
+                          ).chain(CurveTween(curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fade,
+                          child: SlideTransition(
+                            position: offset,
+                            child: child,
+                          ),
+                        );
                       },
                       child: Text(
                         adjustedQtyStr,
-                        key: ValueKey<String>('qty_${ingredient.id}_$_desiredServings'),
-                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF386BF6)),
+                        key: ValueKey<String>(
+                          'qty_${ingredient.id}_$_desiredServings',
+                        ),
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF386BF6),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     // Optional small badge showing current servings (subtle)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         'x$_desiredServings',
-                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[800], fontWeight: FontWeight.w600),
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -622,13 +679,24 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             duration: const Duration(milliseconds: 300),
             transitionBuilder: (child, animation) {
               final fade = animation.drive(CurveTween(curve: Curves.easeInOut));
-              final offset = animation.drive(Tween<Offset>(begin: const Offset(0, -0.05), end: Offset.zero).chain(CurveTween(curve: Curves.easeOut)));
-              return FadeTransition(opacity: fade, child: SlideTransition(position: offset, child: child));
+              final offset = animation.drive(
+                Tween<Offset>(
+                  begin: const Offset(0, -0.05),
+                  end: Offset.zero,
+                ).chain(CurveTween(curve: Curves.easeOut)),
+              );
+              return FadeTransition(
+                opacity: fade,
+                child: SlideTransition(position: offset, child: child),
+              );
             },
             child: Text(
               '$_desiredServings',
               key: ValueKey<int>(_desiredServings),
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -672,11 +740,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final fatCalories = fats * 9;
 
     final totalMacroCalories = proteinCalories + carbCalories + fatCalories;
-    
+
     // Porcentajes para el gráfico
-    final proteinPercent = totalMacroCalories > 0 ? proteinCalories / totalMacroCalories : 0.0;
-    final carbPercent = totalMacroCalories > 0 ? carbCalories / totalMacroCalories : 0.0;
-    final fatPercent = totalMacroCalories > 0 ? fatCalories / totalMacroCalories : 0.0;
+    final proteinPercent = totalMacroCalories > 0
+        ? proteinCalories / totalMacroCalories
+        : 0.0;
+    final carbPercent = totalMacroCalories > 0
+        ? carbCalories / totalMacroCalories
+        : 0.0;
+    final fatPercent = totalMacroCalories > 0
+        ? fatCalories / totalMacroCalories
+        : 0.0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -717,11 +791,23 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildMacroItem('Proteinas (${proteins}g)', proteinCalories.toDouble(), const Color(0xFF1E88E5)),
+                    _buildMacroItem(
+                      'Proteinas (${proteins}g)',
+                      proteinCalories.toDouble(),
+                      const Color(0xFF1E88E5),
+                    ),
                     const SizedBox(height: 12),
-                    _buildMacroItem('Grasas (${fats}g)', fatCalories.toDouble(), Colors.amber),
+                    _buildMacroItem(
+                      'Grasas (${fats}g)',
+                      fatCalories.toDouble(),
+                      Colors.amber,
+                    ),
                     const SizedBox(height: 12),
-                    _buildMacroItem('Carbohidratos (${carbs}g)', carbCalories.toDouble(), const Color(0xFF42A5F5)),
+                    _buildMacroItem(
+                      'Carbohidratos (${carbs}g)',
+                      carbCalories.toDouble(),
+                      const Color(0xFF42A5F5),
+                    ),
                   ],
                 ),
               ),
@@ -732,7 +818,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildCaloriesChart(double proteinPercent, double carbPercent, double fatPercent) {
+  Widget _buildCaloriesChart(
+    double proteinPercent,
+    double carbPercent,
+    double fatPercent,
+  ) {
     return SizedBox(
       width: 120,
       height: 120,
@@ -751,7 +841,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
           CustomPaint(
             size: const Size(120, 120),
-            painter: _MacroChartPainter(proteinPercent, carbPercent, fatPercent),
+            painter: _MacroChartPainter(
+              proteinPercent,
+              carbPercent,
+              fatPercent,
+            ),
           ),
           const Icon(
             Icons.local_fire_department,
@@ -857,4 +951,3 @@ class _MacroChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
-
