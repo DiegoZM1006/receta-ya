@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receta_ya/features/auth/ui/bloc/signup_bloc.dart';
 import 'package:receta_ya/features/auth/ui/screens/login_screen.dart';
+import 'package:receta_ya/features/auth/ui/screens/forgot_password_screen.dart';
+import 'package:receta_ya/features/auth/ui/screens/reset_password_screen.dart';
 import 'package:receta_ya/features/profile/ui/screens/profile_screen.dart';
 import 'package:receta_ya/features/auth/ui/screens/signup_screen.dart';
 import 'package:receta_ya/features/home/ui/main_screen.dart';
@@ -26,6 +28,10 @@ import 'package:receta_ya/features/meal_types/data/source/meal_type_remote_datas
 import 'package:receta_ya/domain/model/recipe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:app_links/app_links.dart';
+import 'dart:async';
+
+final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,18 +43,77 @@ void main() async {
     url: 'https://mqtmccaetlajrrhetlvi.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xdG1jY2FldGxhanJyaGV0bHZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNzE2NjIsImV4cCI6MjA3NTg0NzY2Mn0.tbo_vztN7rWAXwwSSMI4DGK7WyctdHIi8GM5-5PXOTE',
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
   );
 
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    // Manejar deep link cuando la app ya está abierta
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    });
+
+    // Manejar deep link cuando la app se abre desde cerrada
+    try {
+      final uri = await _appLinks.getInitialLink();
+      if (uri != null) {
+        _handleDeepLink(uri);
+      }
+    } catch (e) {
+      print('Error al obtener deep link inicial: $e');
+    }
+
+    // Escuchar cambios de autenticación
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      if (event == AuthChangeEvent.passwordRecovery) {
+        navigatorKey.currentState?.pushReplacementNamed('/reset-password');
+      }
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    print('Deep link recibido: $uri');
+    
+    if (uri.scheme == 'recetaya' && uri.host == 'reset-password') {
+      // Navegar a la pantalla de reset password
+      navigatorKey.currentState?.pushReplacementNamed('/reset-password');
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Recetas Ya',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -104,6 +169,8 @@ class MyApp extends StatelessWidget {
         '/signup': (_) =>
             BlocProvider(create: (_) => RegisterBloc(), child: SignupScreen()),
         '/login': (_) => LoginScreen(),
+        '/forgot-password': (_) => const ForgotPasswordScreen(),
+        '/reset-password': (_) => const ResetPasswordScreen(),
         '/profile': (_) => ProfileScreen(),
         '/onboarding': (_) => OnboardingScreen(),
         '/favorites': (_) => FavoritesScreen(),
