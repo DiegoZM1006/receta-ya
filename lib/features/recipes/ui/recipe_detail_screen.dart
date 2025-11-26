@@ -35,6 +35,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final GetFavoritesCountUseCase _getFavoritesCount;
   int _favoritesCount = 0;
   int _desiredServings = 1;
+  
+  // Cooking mode checklist state
+  final Map<String, bool> _ingredientChecklist = {};
 
   @override
   void initState() {
@@ -963,6 +966,28 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ],
       ),
     );
+  }
+
+  // Checklist management methods
+  void _resetChecklist(List<dynamic> ingredients) {
+    _ingredientChecklist.clear();
+    for (var ingredient in ingredients) {
+      _ingredientChecklist[ingredient.id] = false;
+    }
+  }
+
+  void _toggleIngredient(String ingredientId) {
+    setState(() {
+      _ingredientChecklist[ingredientId] = !(_ingredientChecklist[ingredientId] ?? false);
+    });
+  }
+
+  void _toggleAllIngredients(bool value, List<dynamic> ingredients) {
+    setState(() {
+      for (var ingredient in ingredients) {
+        _ingredientChecklist[ingredient.id] = value;
+      }
+    });
   }
 }
 
