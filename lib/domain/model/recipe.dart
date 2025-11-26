@@ -79,4 +79,59 @@ class Recipe {
       types: const [],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+      'calories_per_serving': caloriesPerPortion,
+      'protein_per_serving': proteinsPerPortion,
+      'carbs_per_serving': carbsPerPortion,
+      'fat_per_serving': fatsPerPortion,
+      'prep_time': prepTimeMinutes,
+      'difficulty': difficulty,
+      'image_url': imageUrl,
+      'instructions': instructions,
+      'base_servings': baseServings,
+    };
+  }
+  
+  /// Copia la receta con nuevos valores
+  Recipe copyWith({
+    String? id,
+    String? name,
+    String? description,
+    double? caloriesPerPortion,
+    int? proteinsPerPortion,
+    int? carbsPerPortion,
+    int? fatsPerPortion,
+    int? prepTimeMinutes,
+    String? difficulty,
+    String? imageUrl,
+    String? instructions,
+    int? baseServings,
+    DateTime? createdAt,
+    String? type,
+    List<String>? types,
+    List<Ingredient>? ingredients,
+  }) {
+    return Recipe(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      caloriesPerPortion: caloriesPerPortion ?? this.caloriesPerPortion,
+      proteinsPerPortion: proteinsPerPortion ?? this.proteinsPerPortion,
+      carbsPerPortion: carbsPerPortion ?? this.carbsPerPortion,
+      fatsPerPortion: fatsPerPortion ?? this.fatsPerPortion,
+      prepTimeMinutes: prepTimeMinutes ?? this.prepTimeMinutes,
+      difficulty: difficulty ?? this.difficulty,
+      imageUrl: imageUrl ?? this.imageUrl,
+      instructions: instructions ?? this.instructions,
+      baseServings: baseServings ?? this.baseServings,
+      createdAt: createdAt ?? this.createdAt,
+      type: type ?? this.type,
+      types: types ?? this.types,
+      ingredients: ingredients ?? this.ingredients,
+    );
+  }
 }

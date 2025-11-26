@@ -98,6 +98,28 @@ class ProfileView extends StatelessWidget {
                     ),
                   ]),
                   const SizedBox(height: 16),
+                  // Botón de administración si es admin
+                  if (profile.isAdmin)
+                    Card(
+                      elevation: 2,
+                      color: Colors.orange[50],
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.admin_panel_settings,
+                          color: Colors.orange,
+                          size: 32,
+                        ),
+                        title: const Text(
+                          'Panel de Administración',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: const Text('Gestionar recetas'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/admin/recipes');
+                        },
+                      ),
+                    ),
                   // Puedes agregar más secciones aquí
                 ],
               ),
