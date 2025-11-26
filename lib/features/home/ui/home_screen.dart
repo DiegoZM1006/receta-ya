@@ -283,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         final nq = _normalize(_searchQuery);
                         filtered = state.recipes.where((r) {
                           final name = _normalize(r.name);
-                          return name.startsWith(nq);
+                          return name.contains(nq);
                         }).toList();
                       }
 

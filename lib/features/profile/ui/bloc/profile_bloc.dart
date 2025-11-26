@@ -1,23 +1,29 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:receta_ya/features/profile/domain/usecases/get_profile_usecase.dart';
 import 'package:receta_ya/features/profile/domain/usecases/update_onboarding_data_usecase.dart';
+import 'package:receta_ya/features/profile/domain/usecases/update_profile_usecase.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_event.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final GetProfileUseCase getProfileUseCase;
   final UpdateOnboardingDataUseCase updateOnboardingDataUseCase;
+  final UpdateProfileUseCase updateProfileUseCase;
 
   ProfileBloc({
     GetProfileUseCase? getProfileUseCase,
     UpdateOnboardingDataUseCase? updateOnboardingDataUseCase,
+    UpdateProfileUseCase? updateProfileUseCase,
   })  : getProfileUseCase = getProfileUseCase ?? GetProfileUseCase(),
         updateOnboardingDataUseCase =
             updateOnboardingDataUseCase ?? UpdateOnboardingDataUseCase(),
+        updateProfileUseCase = 
+            updateProfileUseCase ?? UpdateProfileUseCase(),
         super(ProfileInitial()) {
     on<LoadProfile>(_onLoadProfile);
     on<UpdateOnboardingData>(_onUpdateOnboardingData);
     on<UpdateProfileData>(_onUpdateProfileData);
+    on<UpdateProfileInfo>(_onUpdateProfileInfo);
   }
 
   Future<void> _onLoadProfile(
@@ -67,6 +73,25 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Aquí puedes implementar la lógica para actualizar el perfil
       // Por ahora solo emitimos el estado actualizado
       emit(ProfileUpdated(event.profile));
+    } catch (e) {
+      emit(ProfileError('Error al actualizar el perfil: $e'));
+    }
+  }
+
+  Future<void> _onUpdateProfileInfo(
+    UpdateProfileInfo event,
+    Emitter<ProfileState> emit,
+  ) async {
+    emit(ProfileUpdating());
+    try {
+      await updateProfileUseCase.execute(
+        userId: event.userId,
+        name: event.name,
+        avatarUrl: event.avatarUrl,
+      );
+      emit(ProfileUpdateSuccess());
+      // Reload profile after update
+      add(LoadProfile(event.userId));
     } catch (e) {
       emit(ProfileError('Error al actualizar el perfil: $e'));
     }

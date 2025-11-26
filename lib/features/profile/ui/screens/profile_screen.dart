@@ -5,6 +5,8 @@ import 'package:receta_ya/features/profile/ui/bloc/profile_bloc.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_event.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_state.dart';
 import 'package:receta_ya/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:receta_ya/features/profile/ui/screens/edit_profile_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -123,6 +125,37 @@ class ProfileView extends StatelessWidget {
                       ),
                     ]),
                     const SizedBox(height: 16),
+                    // Botón de editar perfil
+                    Card(
+                      elevation: 2,
+                      color: Colors.blue[50],
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.edit,
+                          color: Colors.blue,
+                          size: 32,
+                        ),
+                        title: const Text(
+                          'Editar Perfil',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: const Text('Actualizar nombre y foto'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditProfileScreen(profile: profile),
+                            ),
+                          );
+                          // Recargar perfil si hubo actualización
+                          if (result == true && context.mounted) {
+                            context.read<ProfileBloc>().add(LoadProfile(profile.id));
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     // Botón de administración si es admin
                     if (profile.isAdmin)
                       Card(
@@ -145,6 +178,35 @@ class ProfileView extends StatelessWidget {
                           },
                         ),
                       ),
+                    const SizedBox(height: 16),
+                    // Botón de cerrar sesión
+                    Card(
+                      elevation: 2,
+                      color: Colors.red[50],
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.logout,
+                          color: Colors.red,
+                          size: 32,
+                        ),
+                        title: const Text(
+                          'Cerrar Sesión',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: const Text('Salir de la aplicación'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () async {
+                          await Supabase.instance.client.auth.signOut();
+                          if (context.mounted) {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/login',
+                              (route) => false,
+                            );
+                          }
+                        },
+                      ),
+                    ),
                     // Puedes agregar más secciones aquí
                   ],
                 ),
