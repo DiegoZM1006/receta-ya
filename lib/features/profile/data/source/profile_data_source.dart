@@ -11,6 +11,11 @@ abstract class ProfileDataSource {
     int? typicalServings,
     String? cookingTimePreference,
   });
+  Future<void> updateProfile({
+    required String userId,
+    String? name,
+    String? avatarUrl,
+  });
 }
 
 class ProfileDataSourceImpl extends ProfileDataSource {
@@ -85,6 +90,35 @@ class ProfileDataSourceImpl extends ProfileDataSource {
     } catch (e) {
       print('Error updating onboarding data: $e');
       throw Exception('Error updating onboarding data: $e');
+    }
+  }
+
+  @override
+  Future<void> updateProfile({
+    required String userId,
+    String? name,
+    String? avatarUrl,
+  }) async {
+    try {
+      final Map<String, dynamic> data = {};
+      if (name != null && name.trim().isNotEmpty) {
+        data['name'] = name.trim();
+      }
+      if (avatarUrl != null) {
+        data['avatar_url'] = avatarUrl;
+      }
+
+      if (data.isEmpty) return;
+
+      await Supabase.instance.client
+          .from('users')
+          .update(data)
+          .eq('user_id', userId);
+
+      print('Profile updated for user $userId');
+    } catch (e) {
+      print('Error updating profile: $e');
+      throw Exception('Error updating profile: $e');
     }
   }
 }

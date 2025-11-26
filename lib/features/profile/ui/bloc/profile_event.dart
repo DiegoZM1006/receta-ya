@@ -29,3 +29,15 @@ class UpdateOnboardingData extends ProfileEvent {
     this.cookingTimePreference,
   });
 }
+
+class UpdateProfileInfo extends ProfileEvent {
+  final String userId;
+  final String? name;
+  final String? avatarUrl;
+
+  UpdateProfileInfo({
+    required this.userId,
+    this.name,
+    this.avatarUrl,
+  });
+}

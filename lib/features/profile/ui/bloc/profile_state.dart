@@ -27,3 +27,5 @@ class ProfileUpdated extends ProfileState {
 }
 
 class OnboardingDataUpdated extends ProfileState {}
+
+class ProfileUpdateSuccess extends ProfileState {}

@@ -26,30 +26,39 @@ class SignupScreenState extends State<SignupScreen> {
     print(Supabase.instance.client.auth.currentSession);
   }
 
-  Widget registerProcess() => BlocBuilder<RegisterBloc, RegisterState>(
-    builder: (context, state) {
-      if (state is RegisterIdle) {
-        return content();
-      } else if (state is RegisterLoading) {
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFE6F4FD), Color(0xFFF4EDFD)],
-            ),
+  Widget registerProcess() => BlocListener<RegisterBloc, RegisterState>(
+    listener: (context, state) {
+      if (state is RegisterError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(state.message),
+            backgroundColor: Colors.redAccent,
           ),
-          child: const Center(child: CircularProgressIndicator()),
         );
       } else if (state is RegisterSuccess) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacementNamed(context, '/onboarding');
-        });
-        return const SizedBox.shrink();
-      } else {
-        return const SizedBox.shrink();
+        Navigator.pushReplacementNamed(context, '/onboarding');
       }
     },
+    child: BlocBuilder<RegisterBloc, RegisterState>(
+      builder: (context, state) {
+        if (state is RegisterIdle || state is RegisterError) {
+          return content();
+        } else if (state is RegisterLoading) {
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFE6F4FD), Color(0xFFF4EDFD)],
+              ),
+            ),
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        } else {
+          return const SizedBox.shrink();
+        }
+      },
+    ),
   );
 
   Widget content() => Container(

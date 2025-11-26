@@ -28,13 +28,22 @@ class LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (!trimmedEmail.contains('@')) {
-      _showError('Correo inválido: debe contener el carácter "@".');
+    // Enhanced email validation
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    if (!emailRegex.hasMatch(trimmedEmail)) {
+      _showError('Por favor ingresa un correo electrónico válido.');
       return;
     }
 
     if (trimmedPass.isEmpty) {
       _showError('Por favor ingresa tu contraseña.');
+      return;
+    }
+
+    if (trimmedPass.length < 6) {
+      _showError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
 
