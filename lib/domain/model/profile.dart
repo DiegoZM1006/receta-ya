@@ -4,6 +4,7 @@ class Profile {
   String email;
   String? avatarUrl;
   DateTime createdAt;
+  String? role;
 
   Profile({
     required this.id,
@@ -11,6 +12,7 @@ class Profile {
     required this.email,
     this.avatarUrl,
     required this.createdAt,
+    this.role,
   });
 
   /// Para enviar a Supabase (ej: insert) - tabla users
@@ -31,6 +33,7 @@ class Profile {
       email: '', // El email se obtiene de auth.users, no de la tabla users
       avatarUrl: json['avatar_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
+      role: json['role'] as String?,
     );
   }
   
@@ -41,6 +44,7 @@ class Profile {
     required String name,
     String? avatarUrl,
     required DateTime createdAt,
+    String? role,
   }) {
     return Profile(
       id: id,
@@ -48,6 +52,11 @@ class Profile {
       email: email,
       avatarUrl: avatarUrl,
       createdAt: createdAt,
+      role: role,
     );
   }
+  
+  /// Verifica si el usuario es administrador
+  bool get isAdmin => role?.toLowerCase() == 'admin';
 }
+

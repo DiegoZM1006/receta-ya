@@ -8,6 +8,22 @@ import 'package:receta_ya/features/auth/ui/screens/signup_screen.dart';
 import 'package:receta_ya/features/home/ui/main_screen.dart';
 import 'package:receta_ya/features/onboarding/ui/screens/onboarding_screen.dart';
 import 'package:receta_ya/features/favorites/ui/favorites_screen.dart';
+import 'package:receta_ya/features/recipes/ui/admin_recipes_screen.dart';
+import 'package:receta_ya/features/recipes/ui/create_recipe_screen.dart';
+import 'package:receta_ya/features/recipes/ui/edit_recipe_screen.dart';
+import 'package:receta_ya/features/recipes/presentation/cubit/recipes_cubit.dart';
+import 'package:receta_ya/features/recipes/presentation/cubit/admin_recipes_cubit.dart';
+import 'package:receta_ya/features/recipes/domain/usecases/get_recipes_usecase.dart';
+import 'package:receta_ya/features/recipes/domain/usecases/create_recipe_usecase.dart';
+import 'package:receta_ya/features/recipes/domain/usecases/update_recipe_usecase.dart';
+import 'package:receta_ya/features/recipes/domain/usecases/delete_recipe_usecase.dart';
+import 'package:receta_ya/features/recipes/data/repository/recipe_repository_impl.dart';
+import 'package:receta_ya/features/recipes/data/source/recipe_remote_datasource.dart';
+import 'package:receta_ya/features/meal_types/presentation/cubit/meal_types_cubit.dart';
+import 'package:receta_ya/features/meal_types/domain/usecases/get_meal_types_usecase.dart';
+import 'package:receta_ya/features/meal_types/data/repository/meal_type_repository_impl.dart';
+import 'package:receta_ya/features/meal_types/data/source/meal_type_remote_datasource.dart';
+import 'package:receta_ya/domain/model/recipe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -42,6 +58,48 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: '/login',
+      onGenerateRoute: (settings) {
+        // Manejar rutas con parámetros
+        if (settings.name == '/admin/edit-recipe') {
+          final recipe = settings.arguments as Recipe;
+          return MaterialPageRoute(
+            builder: (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => AdminRecipesCubit(
+                    createRecipe: CreateRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                    updateRecipe: UpdateRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                    deleteRecipe: DeleteRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                  ),
+                ),
+                BlocProvider(
+                  create: (_) => MealTypesCubit(
+                    getMealTypes: GetMealTypesUseCase(
+                      MealTypeRepositoryImpl(
+                        remote: MealTypeRemoteDataSource(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              child: EditRecipeScreen(recipe: recipe),
+            ),
+          );
+        }
+        return null;
+      },
       routes: {
         '/signup': (_) =>
             BlocProvider(create: (_) => RegisterBloc(), child: SignupScreen()),
@@ -50,6 +108,72 @@ class MyApp extends StatelessWidget {
         '/onboarding': (_) => OnboardingScreen(),
         '/favorites': (_) => FavoritesScreen(),
         '/main': (_) => MainScreen(),
+        '/admin/recipes': (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => RecipesCubit(
+                    getRecipes: GetRecipesUseCase(
+                      RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                  ),
+                ),
+                BlocProvider(
+                  create: (_) => AdminRecipesCubit(
+                    createRecipe: CreateRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                    updateRecipe: UpdateRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                    deleteRecipe: DeleteRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              child: const AdminRecipesScreen(),
+            ),
+        '/admin/create-recipe': (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => AdminRecipesCubit(
+                    createRecipe: CreateRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                    updateRecipe: UpdateRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                    deleteRecipe: DeleteRecipeUseCase(
+                      repository: RecipeRepositoryImpl(
+                        remote: RecipeRemoteDataSource(),
+                      ),
+                    ),
+                  ),
+                ),
+                BlocProvider(
+                  create: (_) => MealTypesCubit(
+                    getMealTypes: GetMealTypesUseCase(
+                      MealTypeRepositoryImpl(
+                        remote: MealTypeRemoteDataSource(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              child: const CreateRecipeScreen(),
+            ),
       },
     );
   }

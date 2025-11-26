@@ -169,4 +169,156 @@ class RecipeRemoteDataSource {
     );
   }
 
+  Future<String> createRecipe(Recipe recipe, List<String> mealTypeIds) async {
+    try {
+      // Insertar la receta en la tabla recipes
+      final recipeData = recipe.toJson();
+      final response = await client
+          .from('recipes')
+          .insert(recipeData)
+          .select('recipe_id')
+          .single();
+      
+      final recipeId = response['recipe_id'].toString();
+
+      // Insertar los tipos de comida relacionados
+      if (mealTypeIds.isNotEmpty) {
+        final mealTypeMappings = mealTypeIds.map((typeId) => {
+          'recipe_id': recipeId,
+          'meal_type_id': typeId,
+        }).toList();
+        
+        await client.from('recipe_meal_types').insert(mealTypeMappings);
+      }
+
+      // Procesar ingredientes: buscar existentes o crear nuevos
+      if (recipe.ingredients.isNotEmpty) {
+        for (var ingredient in recipe.ingredients) {
+          // Buscar si el ingrediente ya existe por nombre
+          final existingIngredient = await client
+              .from('ingredients')
+              .select('ingredient_id')
+              .eq('name', ingredient.name)
+              .maybeSingle();
+
+          String ingredientId;
+
+          if (existingIngredient != null) {
+            // El ingrediente ya existe
+            ingredientId = existingIngredient['ingredient_id'].toString();
+          } else {
+            // Crear nuevo ingrediente
+            final ingredientData = {
+              'name': ingredient.name,
+              'unit': ingredient.unit,
+              'calories_per_unit': ingredient.caloriesPerUnit,
+            };
+
+            final newIngredient = await client
+                .from('ingredients')
+                .insert(ingredientData)
+                .select('ingredient_id')
+                .single();
+
+            ingredientId = newIngredient['ingredient_id'].toString();
+          }
+
+          // Insertar la relación receta-ingrediente
+          await client.from('recipe_ingredients').insert({
+            'recipe_id': recipeId,
+            'ingredient_id': ingredientId,
+            'base_quantity': ingredient.quantity,
+          });
+        }
+      }
+
+      return recipeId;
+    } catch (e) {
+      throw Exception('Error al crear receta: $e');
+    }
+  }
+
+  Future<void> updateRecipe(String recipeId, Recipe recipe, List<String> mealTypeIds) async {
+    try {
+      // Actualizar la receta principal
+      final recipeData = recipe.toJson();
+      await client
+          .from('recipes')
+          .update(recipeData)
+          .eq('recipe_id', recipeId);
+
+      // Eliminar y recrear las relaciones con meal_types
+      await client.from('recipe_meal_types').delete().eq('recipe_id', recipeId);
+      
+      if (mealTypeIds.isNotEmpty) {
+        final mealTypeMappings = mealTypeIds.map((typeId) => {
+          'recipe_id': recipeId,
+          'meal_type_id': typeId,
+        }).toList();
+        
+        await client.from('recipe_meal_types').insert(mealTypeMappings);
+      }
+
+      // Eliminar y recrear las relaciones con ingredientes
+      await client.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+      
+      if (recipe.ingredients.isNotEmpty) {
+        for (var ingredient in recipe.ingredients) {
+          // Buscar si el ingrediente ya existe por nombre
+          final existingIngredient = await client
+              .from('ingredients')
+              .select('ingredient_id')
+              .eq('name', ingredient.name)
+              .maybeSingle();
+
+          String ingredientId;
+
+          if (existingIngredient != null) {
+            // El ingrediente ya existe
+            ingredientId = existingIngredient['ingredient_id'].toString();
+          } else {
+            // Crear nuevo ingrediente
+            final ingredientData = {
+              'name': ingredient.name,
+              'unit': ingredient.unit,
+              'calories_per_unit': ingredient.caloriesPerUnit,
+            };
+
+            final newIngredient = await client
+                .from('ingredients')
+                .insert(ingredientData)
+                .select('ingredient_id')
+                .single();
+
+            ingredientId = newIngredient['ingredient_id'].toString();
+          }
+
+          // Insertar la relación receta-ingrediente
+          await client.from('recipe_ingredients').insert({
+            'recipe_id': recipeId,
+            'ingredient_id': ingredientId,
+            'base_quantity': ingredient.quantity,
+          });
+        }
+      }
+    } catch (e) {
+      throw Exception('Error al actualizar receta: $e');
+    }
+  }
+
+  Future<void> deleteRecipe(String recipeId) async {
+    try {
+      // Eliminar las relaciones con meal_types
+      await client.from('recipe_meal_types').delete().eq('recipe_id', recipeId);
+      
+      // Eliminar las relaciones con ingredientes
+      await client.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+      
+      // Eliminar la receta principal
+      await client.from('recipes').delete().eq('recipe_id', recipeId);
+    } catch (e) {
+      throw Exception('Error al eliminar receta: $e');
+    }
+  }
+
 }

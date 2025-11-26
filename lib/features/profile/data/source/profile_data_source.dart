@@ -50,6 +50,7 @@ class ProfileDataSourceImpl extends ProfileDataSource {
         name: response['name'] as String,
         avatarUrl: response['avatar_url'] as String?,
         createdAt: DateTime.parse(response['created_at'] as String),
+        role: response['role'] as String?,
       );
     } catch (e) {
       print('Error al obtener perfil del usuario: $e');
