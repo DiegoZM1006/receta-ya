@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:receta_ya/core/constants/app_colors.dart';
+import 'package:receta_ya/core/constants/app_text_styles.dart';
 import 'package:receta_ya/features/home/domain/model/chat_message.dart';
 import 'package:receta_ya/features/home/domain/usecases/generate_recipe_usecase.dart';
 import 'package:receta_ya/features/home/domain/model/gemini_recipe.dart';
@@ -219,9 +220,9 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Chat de Recetas',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+          style: AppTextStyles.title.copyWith(fontSize: 20),
         ),
         actions: [
           IconButton(

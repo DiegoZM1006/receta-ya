@@ -45,9 +45,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         cookingTimePreference: cookingTimePreference,
       );
 
-      // Navigate to profile after successful onboarding
+      // Navigate to home with bottom navigation after successful onboarding
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/profile');
+      Navigator.pushReplacementNamed(context, '/main');
     } catch (e) {
       print('Error saving onboarding data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
