@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:receta_ya/core/constants/app_text_styles.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_bloc.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_event.dart';
 import 'package:receta_ya/features/profile/ui/bloc/profile_state.dart';
@@ -35,101 +36,126 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Perfil')),
-      body: BlocBuilder<ProfileBloc, ProfileState>(
-        builder: (context, state) {
-          if (state is ProfileLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text(
+          'Perfil',
+          style: AppTextStyles.title.copyWith(fontSize: 20),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFE6F4FD), Color(0xFFF4EDFD)],
+          ),
+        ),
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            if (state is ProfileLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state is ProfileError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.message,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final getCurrentUser = GetCurrentUserUseCase();
-                      final userId = await getCurrentUser.execute();
-                      if (userId != null) {
-                        context.read<ProfileBloc>().add(LoadProfile(userId));
-                      }
-                    },
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            );
-          }
+            if (state is ProfileError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final getCurrentUser = GetCurrentUserUseCase();
+                        final userId = await getCurrentUser.execute();
+                        if (userId != null) {
+                          context.read<ProfileBloc>().add(LoadProfile(userId));
+                        }
+                      },
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-          if (state is ProfileLoaded) {
-            final profile = state.profile;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundImage: profile.avatarUrl != null
-                          ? NetworkImage(profile.avatarUrl!)
-                          : null,
-                      child: profile.avatarUrl == null
-                          ? const Icon(Icons.person, size: 60)
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildInfoCard('Información Personal', [
-                    _buildInfoRow('Nombre', profile.name),
-                    _buildInfoRow('Email', profile.email),
-                    _buildInfoRow(
-                      'Miembro desde',
-                      _formatDate(profile.createdAt),
-                    ),
-                  ]),
-                  const SizedBox(height: 16),
-                  // Botón de administración si es admin
-                  if (profile.isAdmin)
-                    Card(
-                      elevation: 2,
-                      color: Colors.orange[50],
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.admin_panel_settings,
-                          color: Colors.orange,
-                          size: 32,
-                        ),
-                        title: const Text(
-                          'Panel de Administración',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: const Text('Gestionar recetas'),
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        onTap: () {
-                          Navigator.pushNamed(context, '/admin/recipes');
-                        },
+            if (state is ProfileLoaded) {
+              final profile = state.profile;
+              return SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 12,
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundImage: profile.avatarUrl != null
+                            ? NetworkImage(profile.avatarUrl!)
+                            : null,
+                        child: profile.avatarUrl == null
+                            ? const Icon(Icons.person, size: 60)
+                            : null,
                       ),
                     ),
-                  // Puedes agregar más secciones aquí
-                ],
-              ),
-            );
-          }
+                    const SizedBox(height: 24),
+                    _buildInfoCard('Información Personal', [
+                      _buildInfoRow('Nombre', profile.name),
+                      _buildInfoRow('Email', profile.email),
+                      _buildInfoRow(
+                        'Miembro desde',
+                        _formatDate(profile.createdAt),
+                      ),
+                    ]),
+                    const SizedBox(height: 16),
+                    // Botón de administración si es admin
+                    if (profile.isAdmin)
+                      Card(
+                        elevation: 2,
+                        color: Colors.orange[50],
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.admin_panel_settings,
+                            color: Colors.orange,
+                            size: 32,
+                          ),
+                          title: const Text(
+                            'Panel de Administración',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: const Text('Gestionar recetas'),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/admin/recipes');
+                          },
+                        ),
+                      ),
+                    // Puedes agregar más secciones aquí
+                  ],
+                ),
+              );
+            }
 
-          return const Center(
-            child: Text('No hay información del perfil disponible'),
-          );
-        },
+            return const Center(
+              child: Text('No hay información del perfil disponible'),
+            );
+          },
+        ),
       ),
     );
   }

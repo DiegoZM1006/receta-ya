@@ -25,7 +25,7 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  int _selectedTab = 0; // 0 = Ingredientes, 1 = Calorias
+  int _selectedTab = 0; // 0 = Ingredientes, 1 = Calorias, 2 = Instrucciones
   bool _isFavorite = false;
   bool _favoriteLoaded = false;
   final _favoritesRepo = FavoritesRepositoryImpl();
@@ -245,18 +245,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               child: const Icon(Icons.arrow_back, color: Colors.black),
             ),
           ),
-          Expanded(
-            child: Center(
-              child: Text(
-                recipe.name,
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF386BF6),
-                ),
-              ),
-            ),
-          ),
           Container(
             width: 40,
             height: 40,
@@ -343,36 +331,53 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget _buildRecipeImage(Recipe recipe) {
-    return Center(
-      child: Container(
-        width: 200,
-        height: 200,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ClipOval(
-          child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-              ? Image.network(
-                  recipe.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, size: 50),
-                  ),
-                )
-              : Container(
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.image_not_supported, size: 50),
+    return Column(
+      children: [
+        Center(
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
+              ],
+            ),
+            child: ClipOval(
+              child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                  ? Image.network(
+                      recipe.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported, size: 50),
+                      ),
+                    )
+                  : Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image_not_supported, size: 50),
+                    ),
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            recipe.name,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF386BF6),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -387,7 +392,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         children: [
           Expanded(child: _buildTabButton('Ingredientes', 0)),
           Container(width: 1, height: 40, color: Colors.grey[300]),
-          Expanded(child: _buildTabButton('Calorias', 1)),
+          Expanded(child: _buildTabButton('Calorías', 1)),
+          Container(width: 1, height: 40, color: Colors.grey[300]),
+          Expanded(child: _buildTabButton('Preparación', 2)),
         ],
       ),
     );
@@ -428,8 +435,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Widget _buildTabContent(Recipe recipe) {
     if (_selectedTab == 0) {
       return _buildIngredientsTab(recipe);
-    } else {
+    } else if (_selectedTab == 1) {
       return _buildCaloriesTab(recipe);
+    } else {
+      return _buildInstructionsTab(recipe);
     }
   }
 
@@ -568,9 +577,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     // Base quantity (muted)
                     Text(
@@ -580,7 +594,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         color: Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(width: 8),
                     // Arrow separator
                     Text(
                       '→',
@@ -589,7 +602,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         color: Colors.grey[500],
                       ),
                     ),
-                    const SizedBox(width: 8),
                     // Adjusted quantity with subtle animation
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
@@ -881,6 +893,75 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildInstructionsTab(Recipe recipe) {
+    final instructions = recipe.instructions;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.menu_book,
+                color: Color(0xFF386BF6),
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Preparación',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF386BF6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (instructions != null && instructions.isNotEmpty)
+            Text(
+              instructions,
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                height: 1.8,
+                color: Colors.grey[800],
+              ),
+            )
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No hay instrucciones disponibles',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
