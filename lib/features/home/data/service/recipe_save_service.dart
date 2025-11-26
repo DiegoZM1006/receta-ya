@@ -15,10 +15,10 @@ class RecipeSaveService {
         'base_servings': geminiRecipe.servings,
         'prep_time': geminiRecipe.prepTimeMinutes,
         'difficulty': geminiRecipe.difficulty,
-        'calories_per_serving': geminiRecipe.caloriesPerServing,
-        'protein_per_serving': geminiRecipe.proteinPerServing,
-        'carbs_per_serving': geminiRecipe.carbsPerServing,
-        'fat_per_serving': geminiRecipe.fatPerServing,
+        'calories_per_serving': geminiRecipe.caloriesPerServing.toInt(),
+        'protein_per_serving': geminiRecipe.proteinPerServing.toInt(),
+        'carbs_per_serving': geminiRecipe.carbsPerServing.toInt(),
+        'fat_per_serving': geminiRecipe.fatPerServing.toInt(),
         'image_url':
             'https://picsum.photos/seed/recipe${DateTime.now().millisecondsSinceEpoch}/800/600',
         'created_at': DateTime.now().toIso8601String(),
@@ -74,7 +74,7 @@ class RecipeSaveService {
         await _supabase.from('recipe_ingredients').insert({
           'recipe_id': recipeId,
           'ingredient_id': ingredientId,
-          'base_quantity': ingredient.quantity,
+          'base_quantity': ingredient.quantity.toInt(),
         });
       }
 
