@@ -196,6 +196,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ],
           ),
         ),
+        floatingActionButton: BlocBuilder<RecipeDetailCubit, RecipeDetailState>(
+          builder: (context, state) {
+            if (state.recipe == null) return const SizedBox.shrink();
+            return _buildCookButton(state.recipe!);
+          },
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -966,6 +973,28 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ],
       ),
     );
+  }
+
+  // Cooking mode button
+  Widget _buildCookButton(Recipe recipe) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, right: 16), 
+      child: FloatingActionButton(
+        onPressed: () => _showIngredientsChecklist(recipe),
+        backgroundColor: const Color(0xFF386BF6),
+        elevation: 3,
+        mini: true, 
+        child: const Icon(
+          Icons.restaurant_menu,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  void _showIngredientsChecklist(Recipe recipe) {
+    
   }
 
   // Checklist management methods
