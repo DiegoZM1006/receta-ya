@@ -908,6 +908,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _buildInstructionsTab(Recipe recipe) {
     final instructions = recipe.instructions;
+    final steps = _parseInstructions(instructions ?? '');
+    final baseServings = (recipe.baseServings != null && recipe.baseServings! > 0)
+        ? recipe.baseServings!
+        : 1;
+    final factor = _desiredServings / baseServings;
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -937,17 +942,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Para $_desiredServings ${_desiredServings == 1 ? "porción" : "porciones"}',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.grey[600],
+            ),
+          ),
           const SizedBox(height: 20),
-          if (instructions != null && instructions.isNotEmpty)
-            Text(
-              instructions,
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                height: 1.8,
-                color: Colors.grey[800],
-              ),
-            )
-          else
+          if (steps.isEmpty)
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(40),
@@ -969,7 +973,260 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   ],
                 ),
               ),
+            )
+          else
+            ...steps.asMap().entries.map((entry) {
+              final stepNumber = entry.key + 1;
+              final stepText = entry.value;
+              return _buildStepItem(stepNumber, stepText, factor);
+            }),
+        ],
+      ),
+    );
+  }
+
+  List<String> _parseInstructions(String text) {
+    if (text.isEmpty) return [];
+    
+    // Primero intentar split por saltos de línea
+    final numberedPattern = RegExp(r'^\d+[\)\.:\-]\s*');
+    final lines = text.split('\n').where((s) => s.trim().isNotEmpty).toList();
+    
+    // Si hay múltiples líneas con números, usar ese formato
+    if (lines.length > 1 && lines.any((line) => numberedPattern.hasMatch(line.trim()))) {
+      return lines.map((line) => 
+        line.trim().replaceFirst(numberedPattern, '').trim()
+      ).where((s) => s.isNotEmpty).toList();
+    }
+    
+    // Si todo está en una línea, intentar split por patrones como ". 2)", ") 2)", etc.
+    if (lines.length == 1 || (lines.length > 1 && !lines.any((line) => numberedPattern.hasMatch(line.trim())))) {
+      final singleLine = text.trim();
+      
+      // Patrón mejorado: detecta ". N)" o ". N." donde N es un número
+      final stepSeparatorPattern = RegExp(r'[\.\)]\s+(\d+[\)\.])\s+');
+      
+      if (stepSeparatorPattern.hasMatch(singleLine)) {
+        final steps = <String>[];
+        final matches = stepSeparatorPattern.allMatches(singleLine).toList();
+        
+        // Procesar primer paso (antes del primer match)
+        if (matches.isNotEmpty) {
+          final firstStep = singleLine.substring(0, matches[0].start + 1).trim();
+          final cleaned = firstStep.replaceFirst(numberedPattern, '').trim();
+          // Remover punto final si existe
+          final finalCleaned = cleaned.endsWith('.') || cleaned.endsWith(')') 
+              ? cleaned.substring(0, cleaned.length - 1).trim() 
+              : cleaned;
+          if (finalCleaned.isNotEmpty) steps.add(finalCleaned);
+        }
+        
+        // Procesar pasos intermedios
+        for (int i = 0; i < matches.length - 1; i++) {
+          final start = matches[i].end;
+          final end = matches[i + 1].start + 1;
+          final stepText = singleLine.substring(start, end).trim();
+          // Remover punto final si existe
+          final cleaned = stepText.endsWith('.') || stepText.endsWith(')') 
+              ? stepText.substring(0, stepText.length - 1).trim() 
+              : stepText;
+          if (cleaned.isNotEmpty) steps.add(cleaned);
+        }
+        
+        // Procesar último paso
+        if (matches.isNotEmpty) {
+          final lastStep = singleLine.substring(matches.last.end).trim();
+          // Remover punto final si existe
+          final cleaned = lastStep.endsWith('.') 
+              ? lastStep.substring(0, lastStep.length - 1).trim() 
+              : lastStep;
+          if (cleaned.isNotEmpty) steps.add(cleaned);
+        }
+        
+        return steps;
+      }
+    }
+    
+    // Si no hay patrón reconocible, retornar líneas tal cual
+    return lines.map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  }
+
+  Map<String, String> _detectAndScaleQuantities(String text, double factor) {
+    final conversions = <String, String>{};
+    
+    // Patrón mejorado: número (entero o decimal) + espacio opcional + unidad
+    final pattern = RegExp(
+      r'(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|litros?|u|unidades?|tazas?|cucharadas?|cucharaditas?|minutos?|min|horas?|hrs?|porciones?|porción)\b',
+      caseSensitive: false
+    );
+    
+    for (final match in pattern.allMatches(text)) {
+      final quantityStr = match.group(1)!.replaceAll(',', '.');
+      final quantity = double.tryParse(quantityStr);
+      if (quantity == null) continue;
+      
+      final unit = match.group(2)!.toLowerCase();
+      final scaled = quantity * factor;
+      
+      final baseStr = '${_formatQuantity(quantity)}$unit';
+      final scaledStr = '${_formatQuantity(scaled)}$unit';
+      
+      conversions[baseStr] = scaledStr;
+    }
+    
+    return conversions;
+  }
+
+  bool _hasFlexiblePhrases(String text) {
+    final flexiblePhrases = [
+      'al gusto',
+      'a gusto',
+      'un poco',
+      'cantidad necesaria',
+      'lo necesario',
+      'opcional',
+      'según preferencia',
+      'según gusto',
+      'según desees',
+      'a tu gusto',
+    ];
+    
+    final lowerText = text.toLowerCase();
+    return flexiblePhrases.any((phrase) => lowerText.contains(phrase));
+  }
+
+  Widget _buildStepItem(int stepNumber, String stepText, double factor) {
+    final conversions = _detectAndScaleQuantities(stepText, factor);
+    final hasFlexible = _hasFlexiblePhrases(stepText);
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Número del paso
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFF386BF6),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Center(
+              child: Text(
+                '$stepNumber',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Texto del paso
+                Text(
+                  stepText,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                
+                // Mostrar conversiones si existen
+                if (conversions.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: conversions.entries.map((entry) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              entry.key,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              ' → ',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                            Text(
+                              entry.value,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF386BF6),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'x$_desiredServings',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: Colors.grey[800],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                
+               
+                if (hasFlexible)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange[300]!),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.info_outline, size: 14, color: Colors.orange[700]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Ajustar según preferencia',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.orange[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
