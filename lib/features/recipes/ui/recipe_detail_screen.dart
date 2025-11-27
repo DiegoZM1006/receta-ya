@@ -35,6 +35,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final GetFavoritesCountUseCase _getFavoritesCount;
   int _favoritesCount = 0;
   int _desiredServings = 1;
+  
+  // Cooking mode checklist state
+  final Map<String, bool> _ingredientChecklist = {};
 
   @override
   void initState() {
@@ -193,6 +196,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ],
           ),
         ),
+        floatingActionButton: BlocBuilder<RecipeDetailCubit, RecipeDetailState>(
+          builder: (context, state) {
+            if (state.recipe == null) return const SizedBox.shrink();
+            return _buildCookButton(state.recipe!);
+          },
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -963,6 +973,355 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ],
       ),
     );
+  }
+
+  // Cooking mode button
+  Widget _buildCookButton(Recipe recipe) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, right: 16), 
+      child: FloatingActionButton(
+        onPressed: () => _showIngredientsChecklist(recipe),
+        backgroundColor: const Color(0xFF386BF6),
+        elevation: 3,
+        mini: true, 
+        child: const Icon(
+          Icons.restaurant_menu,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  void _showIngredientsChecklist(Recipe recipe) {
+    _resetChecklist(recipe.ingredients);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildChecklistModal(recipe),
+    );
+  }
+
+  Widget _buildChecklistModal(Recipe recipe) {
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setModalState) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            children: [
+              _buildModalHandle(),
+              _buildModalHeaderWithState(recipe, setModalState),
+              Expanded(child: _buildModalBodyWithState(recipe, setModalState)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModalHandle() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12, bottom: 8),
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _buildModalHeader(Recipe recipe) {
+    final allChecked = recipe.ingredients.isNotEmpty && 
+        recipe.ingredients.every((ing) => _ingredientChecklist[ing.id] ?? false);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lista de Ingredientes',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Para $_desiredServings ${_desiredServings == 1 ? "porción" : "porciones"}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _toggleAllIngredients(!allChecked, recipe.ingredients);
+                  });
+                },
+                icon: Icon(
+                  allChecked ? Icons.check_box : Icons.check_box_outline_blank,
+                  size: 20,
+                  color: const Color(0xFF386BF6),
+                ),
+                label: Text(
+                  allChecked ? 'Desmarcar' : 'Marcar todos',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF386BF6),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModalHeaderWithState(Recipe recipe, StateSetter setModalState) {
+    final allChecked = recipe.ingredients.isNotEmpty && 
+        recipe.ingredients.every((ing) => _ingredientChecklist[ing.id] ?? false);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lista de Ingredientes',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Para $_desiredServings ${_desiredServings == 1 ? "porción" : "porciones"}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  setModalState(() {
+                    _toggleAllIngredients(!allChecked, recipe.ingredients);
+                  });
+                },
+                icon: Icon(
+                  allChecked ? Icons.check_box : Icons.check_box_outline_blank,
+                  size: 20,
+                  color: const Color(0xFF386BF6),
+                ),
+                label: Text(
+                  allChecked ? 'Desmarcar' : 'Marcar todos',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF386BF6),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModalBody(Recipe recipe) {
+    return Center(
+      child: Text(
+        'TODO: Implementar lista en siguiente commit',
+        style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildModalBodyWithState(Recipe recipe, StateSetter setModalState) {
+    if (recipe.ingredients.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.shopping_basket_outlined,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No hay ingredientes disponibles',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      itemCount: recipe.ingredients.length,
+      itemBuilder: (context, index) {
+        final ingredient = recipe.ingredients[index];
+        return _buildChecklistItemWithState(ingredient, recipe, setModalState);
+      },
+    );
+  }
+
+  Widget _buildChecklistItemWithState(
+    dynamic ingredient,
+    Recipe recipe,
+    StateSetter setModalState,
+  ) {
+    final isChecked = _ingredientChecklist[ingredient.id] ?? false;
+    
+    // Calculate adjusted quantity based on desired servings
+    final baseServings = (recipe.baseServings != null && recipe.baseServings! > 0)
+        ? recipe.baseServings!
+        : 1;
+    final factor = _desiredServings / baseServings;
+    final adjusted = ingredient.quantity * factor;
+    final adjustedQtyStr = '${_formatQuantity(adjusted)} ${ingredient.unit}';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setModalState(() {
+              _toggleIngredient(ingredient.id);
+            });
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: isChecked ? Colors.grey[100] : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isChecked ? const Color(0xFF386BF6) : Colors.grey[300]!,
+                width: isChecked ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isChecked ? Icons.check_box : Icons.check_box_outline_blank,
+                  color: isChecked ? const Color(0xFF386BF6) : Colors.grey[400],
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ingredient.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          decoration: isChecked ? TextDecoration.lineThrough : null,
+                          color: isChecked ? Colors.grey[600] : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        adjustedQtyStr,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: isChecked ? Colors.grey[500] : const Color(0xFF386BF6),
+                          fontWeight: FontWeight.w600,
+                          decoration: isChecked ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Checklist management methods
+  void _resetChecklist(List<dynamic> ingredients) {
+    _ingredientChecklist.clear();
+    for (var ingredient in ingredients) {
+      _ingredientChecklist[ingredient.id] = false;
+    }
+  }
+
+  void _toggleIngredient(String ingredientId) {
+    setState(() {
+      _ingredientChecklist[ingredientId] = !(_ingredientChecklist[ingredientId] ?? false);
+    });
+  }
+
+  void _toggleAllIngredients(bool value, List<dynamic> ingredients) {
+    setState(() {
+      for (var ingredient in ingredients) {
+        _ingredientChecklist[ingredient.id] = value;
+      }
+    });
   }
 }
 
