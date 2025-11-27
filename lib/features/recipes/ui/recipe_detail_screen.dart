@@ -994,7 +994,71 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   void _showIngredientsChecklist(Recipe recipe) {
+    _resetChecklist(recipe.ingredients);
     
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildChecklistModal(recipe),
+    );
+  }
+
+  Widget _buildChecklistModal(Recipe recipe) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildModalHandle(),
+          _buildModalHeader(recipe),
+          Expanded(child: _buildModalBody(recipe)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModalHandle() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12, bottom: 8),
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _buildModalHeader(Recipe recipe) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Text(
+        'Lista de Ingredientes',
+        style: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModalBody(Recipe recipe) {
+    return Center(
+      child: Text(
+        'TODO: Implementar lista en siguiente commit',
+        style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
+      ),
+    );
   }
 
   // Checklist management methods
