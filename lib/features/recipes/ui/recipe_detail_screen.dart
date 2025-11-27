@@ -1020,7 +1020,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             children: [
               _buildModalHandle(),
               _buildModalHeaderWithState(recipe, setModalState),
-              Expanded(child: _buildModalBody(recipe)),
+              Expanded(child: _buildModalBodyWithState(recipe, setModalState)),
             ],
           ),
         );
@@ -1183,6 +1183,121 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Text(
         'TODO: Implementar lista en siguiente commit',
         style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildModalBodyWithState(Recipe recipe, StateSetter setModalState) {
+    if (recipe.ingredients.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.shopping_basket_outlined,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No hay ingredientes disponibles',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      itemCount: recipe.ingredients.length,
+      itemBuilder: (context, index) {
+        final ingredient = recipe.ingredients[index];
+        return _buildChecklistItemWithState(ingredient, recipe, setModalState);
+      },
+    );
+  }
+
+  Widget _buildChecklistItemWithState(
+    dynamic ingredient,
+    Recipe recipe,
+    StateSetter setModalState,
+  ) {
+    final isChecked = _ingredientChecklist[ingredient.id] ?? false;
+    
+    // Calculate adjusted quantity based on desired servings
+    final baseServings = (recipe.baseServings != null && recipe.baseServings! > 0)
+        ? recipe.baseServings!
+        : 1;
+    final factor = _desiredServings / baseServings;
+    final adjusted = ingredient.quantity * factor;
+    final adjustedQtyStr = '${_formatQuantity(adjusted)} ${ingredient.unit}';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setModalState(() {
+              _toggleIngredient(ingredient.id);
+            });
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: isChecked ? Colors.grey[100] : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isChecked ? const Color(0xFF386BF6) : Colors.grey[300]!,
+                width: isChecked ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isChecked ? Icons.check_box : Icons.check_box_outline_blank,
+                  color: isChecked ? const Color(0xFF386BF6) : Colors.grey[400],
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ingredient.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          decoration: isChecked ? TextDecoration.lineThrough : null,
+                          color: isChecked ? Colors.grey[600] : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        adjustedQtyStr,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: isChecked ? Colors.grey[500] : const Color(0xFF386BF6),
+                          fontWeight: FontWeight.w600,
+                          decoration: isChecked ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
