@@ -1005,22 +1005,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget _buildChecklistModal(Recipe recipe) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        children: [
-          _buildModalHandle(),
-          _buildModalHeader(recipe),
-          Expanded(child: _buildModalBody(recipe)),
-        ],
-      ),
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setModalState) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            children: [
+              _buildModalHandle(),
+              _buildModalHeaderWithState(recipe, setModalState),
+              Expanded(child: _buildModalBody(recipe)),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1037,17 +1041,139 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget _buildModalHeader(Recipe recipe) {
+    final allChecked = recipe.ingredients.isNotEmpty && 
+        recipe.ingredients.every((ing) => _ingredientChecklist[ing.id] ?? false);
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
       ),
-      child: Text(
-        'Lista de Ingredientes',
-        style: GoogleFonts.poppins(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lista de Ingredientes',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Para $_desiredServings ${_desiredServings == 1 ? "porción" : "porciones"}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _toggleAllIngredients(!allChecked, recipe.ingredients);
+                  });
+                },
+                icon: Icon(
+                  allChecked ? Icons.check_box : Icons.check_box_outline_blank,
+                  size: 20,
+                  color: const Color(0xFF386BF6),
+                ),
+                label: Text(
+                  allChecked ? 'Desmarcar' : 'Marcar todos',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF386BF6),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModalHeaderWithState(Recipe recipe, StateSetter setModalState) {
+    final allChecked = recipe.ingredients.isNotEmpty && 
+        recipe.ingredients.every((ing) => _ingredientChecklist[ing.id] ?? false);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lista de Ingredientes',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Para $_desiredServings ${_desiredServings == 1 ? "porción" : "porciones"}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  setModalState(() {
+                    _toggleAllIngredients(!allChecked, recipe.ingredients);
+                  });
+                },
+                icon: Icon(
+                  allChecked ? Icons.check_box : Icons.check_box_outline_blank,
+                  size: 20,
+                  color: const Color(0xFF386BF6),
+                ),
+                label: Text(
+                  allChecked ? 'Desmarcar' : 'Marcar todos',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF386BF6),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
